@@ -11,9 +11,9 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 )
 
-// StartUnixListener starts up a unix domain socket listener for reconnects to
+// startUnixListener starts up a unix domain socket listener for reconnects to
 // be sent through
-func (bot *Bot) StartUnixListener() {
+func (bot *Bot) startUnixListener() {
 	defer bot.wg.Done()
 	unaddr, err := net.ResolveUnixAddr("unix", bot.unixastr)
 	if err != nil {

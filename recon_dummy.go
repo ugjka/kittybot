@@ -2,7 +2,7 @@
 
 package kitty
 
-func (bot *Bot) StartUnixListener() {
+func (bot *Bot) startUnixListener() {
 	bot.wg.Done()
 }
 

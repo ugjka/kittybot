@@ -217,9 +217,9 @@ func (bot *Bot) handleOutgoingMessages() {
 	}
 }
 
-// SASLAuthenticate performs SASL authentication
+// saslAuthenticate performs SASL authentication
 // ref: https://github.com/atheme/charybdis/blob/master/doc/sasl.txt
-func (bot *Bot) SASLAuthenticate(user, pass string) {
+func (bot *Bot) saslAuthenticate(user, pass string) {
 	bot.didAddSASLtrig.Do(func() {
 		var saslHandler = Trigger{
 			Condition: func(bot *Bot, mes *Message) bool {
@@ -252,8 +252,8 @@ func (bot *Bot) SASLAuthenticate(user, pass string) {
 	bot.sendUserCommand(bot.Nick, bot.Nick, "8")
 }
 
-// StandardRegistration performs a basic set of registration commands
-func (bot *Bot) StandardRegistration() {
+// standardRegistration performs a basic set of registration commands
+func (bot *Bot) standardRegistration() {
 	//Server registration
 	if bot.Password != "" {
 		bot.Send("PASS " + bot.Password)
@@ -321,14 +321,14 @@ func (bot *Bot) Run() (hijacked bool) {
 		go bot.HijackAfterFunc()
 	}
 	bot.wg.Add(1)
-	go bot.StartUnixListener()
+	go bot.startUnixListener()
 
 	// Only register on an initial connection
 	if !bot.reconnecting {
 		if bot.SASL {
-			bot.SASLAuthenticate(bot.Nick, bot.Password)
+			bot.saslAuthenticate(bot.Nick, bot.Password)
 		} else {
-			bot.StandardRegistration()
+			bot.standardRegistration()
 		}
 	}
 	bot.wg.Wait()
