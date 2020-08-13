@@ -134,8 +134,8 @@ func (bot *Bot) Prefix() *irc.Prefix {
 	return prefix
 }
 
-// PrefixChange changes bot's prefix
-// use empty string to make no change
+// PrefixChange changes bot's prefix,
+// use empty strings to make no change
 func (bot *Bot) PrefixChange(name, user, host string) {
 	bot.prefixMu.Lock()
 	if name != "" {
@@ -279,7 +279,7 @@ func (bot *Bot) SetNick(nick string) {
 
 // Run starts the bot and connects to the server. Blocks until we disconnect from the server.
 // Returns true if we have been hijacked (if you loop over Run it might be wise to break on hijack
-// to avoid looping between 2 instances)
+// to avoid looping between 2 instances).
 func (bot *Bot) Run() (hijacked bool) {
 	bot.Debug("Starting bot goroutines")
 	// These need to be reset on each run
@@ -463,8 +463,8 @@ type Handler interface {
 	Handle(*Bot, *Message)
 }
 
-// Trigger is a Handler which is guarded by a condition
-// Do NOT alter *Message in your triggers or you'll have strange things happen
+// Trigger is a Handler which is guarded by a condition.
+// DO NOT alter *Message in your triggers or you'll have strange things happen.
 type Trigger struct {
 	// Returns true if this trigger applies to the passed in message
 	Condition func(*Bot, *Message) bool
