@@ -187,7 +187,7 @@ func (bot *Bot) handleIncomingMessages() {
 	for scan.Scan() {
 		// Disconnect if we have seen absolutely nothing for 300 seconds
 		bot.con.SetDeadline(time.Now().Add(bot.PingTimeout))
-		msg := ParseMessage(scan.Text())
+		msg := parseMessage(scan.Text())
 		bot.Debug("Incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Trailing", msg.Trailing())
 		go func() {
 			for _, h := range bot.handlers {
@@ -566,10 +566,9 @@ type Message struct {
 	From string
 }
 
-// ParseMessage takes a string and attempts to create a Message struct.
+// parseMessage takes a string and attempts to create a Message struct.
 // Returns nil if the Message is invalid.
-// TODO: Maybe just use sorbix/irc if we can be without the custom stuff?
-func ParseMessage(raw string) (m *Message) {
+func parseMessage(raw string) (m *Message) {
 	m = new(Message)
 	m.Message = irc.ParseMessage(raw)
 	m.Content = m.Trailing()
