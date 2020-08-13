@@ -533,7 +533,7 @@ var getPrefix = Trigger{
 	},
 }
 
-// SaslAuth configuration Helper
+// SaslAuth enables SASL authentification
 func SaslAuth(pass string) func(*Bot) {
 	return func(b *Bot) {
 		b.SASL = true
@@ -541,7 +541,7 @@ func SaslAuth(pass string) func(*Bot) {
 	}
 }
 
-// ReconOpt configuration helper
+// ReconOpt enables session hijacking
 func ReconOpt() func(*Bot) {
 	return func(b *Bot) {
 		b.HijackSession = true
