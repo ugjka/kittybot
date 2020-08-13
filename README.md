@@ -6,7 +6,7 @@ Hard fork of [github.com/whyrusleeping/hellabot](https://github.com/whyrusleepin
 
 ![kittybot](kitty.png?raw=true)
 
-Kitten approved Internet Relay Chat (IRC) bot. KittBot is an easily hackable event based IRC bot
+Kitten approved Internet Relay Chat (IRC) bot. KittyBot is an easily hackable event based IRC bot
 framework with the ability to be updated without losing connection to the
 server. To respond to an event, simply create a "Trigger" struct containing
 two functions, one for the condition, and one for the action.
