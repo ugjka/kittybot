@@ -134,9 +134,9 @@ func (bot *Bot) Prefix() *irc.Prefix {
 	return prefix
 }
 
-// ChangePrefix changes bot's prefix
+// PrefixChange changes bot's prefix
 // use empty string to make no change
-func (bot *Bot) ChangePrefix(name, user, host string) {
+func (bot *Bot) PrefixChange(name, user, host string) {
 	bot.prefixMu.Lock()
 	if name != "" {
 		bot.prefix.Name = name
@@ -273,7 +273,7 @@ func (bot *Bot) SetNick(nick string) {
 	bot.mu.Lock()
 	bot.Nick = nick
 	bot.mu.Unlock()
-	bot.ChangePrefix(nick, "", "")
+	bot.PrefixChange(nick, "", "")
 	bot.Send(fmt.Sprintf("NICK %s", nick))
 }
 
