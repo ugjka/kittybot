@@ -161,17 +161,17 @@ currently being used for:
 
 ## Contributors before the hard fork
 
-- @whyrusleeping
-- @flexd
-- @icholy
-- @bbriggs
-- @Luzifer
-- @mudler
-- @jonreyna
-- @miloprice
-- @m-242
-- @antifuchs
-- @JReyLBC
-- @ForrestWeston
-- @affankingkhan
-- @Villawhatever
+- @[whyrusleeping](https://github.com/whyrusleeping)
+- @[flexd](https://github.com/flexd)
+- @[icholy](https://github.com/icholy)
+- @[bbriggs](https://github.com/bbriggs)
+- @[Luzifer](https://github.com/Luzifer)
+- @[mudler](https://github.com/mudler)
+- @[jonreyna](https://github.com/jonreyna)
+- @[miloprice](https://github.com/miloprice)
+- @[m-242](https://github.com/m-242)
+- @[antifuchs](https://github.com/antifuchs)
+- @[JReyLBC](https://github.com/)
+- @[ForrestWeston](https://github.com/ForrestWeston)
+- @[affankingkhan](https://github.com/affankingkhan)
+- @[Villawhatever](https://github.com/Villawhatever)
