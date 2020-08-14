@@ -237,7 +237,6 @@ func (bot *Bot) saslAuthenticate(user, pass string) {
 					out := bytes.Join([][]byte{[]byte(*bot.saslUser), []byte(*bot.saslUser), []byte(*bot.saslPass)}, []byte{0})
 					encpass := base64.StdEncoding.EncodeToString(out)
 					bot.Send("AUTHENTICATE " + encpass)
-					bot.Send("AUTHENTICATE +")
 					bot.Send("CAP END")
 				}
 			},
