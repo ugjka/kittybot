@@ -68,6 +68,8 @@ type Bot struct {
 	DialTLS func(network, addr string, tlsConf *tls.Config) (*tls.Conn, error)
 	// This bots nick
 	Nick string
+	// Transient nick, that is used internally to track nick changes and calculate the prefix for the bot
+	nick string
 	// Duration to wait between sending of messages to avoid being
 	// kicked by the server for flooding (default 200ms)
 	ThrottleDelay time.Duration
@@ -81,7 +83,7 @@ type Bot struct {
 }
 
 func (bot *Bot) String() string {
-	return fmt.Sprintf("Server: %s, Channels: %v, Nick: %s", bot.Host, bot.Channels, bot.Nick)
+	return fmt.Sprintf("Server: %s, Channels: %v, Nick: %s", bot.Host, bot.Channels, bot.getNick())
 }
 
 // NewBot creates a new instance of Bot
@@ -93,6 +95,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 		unixsock:        fmt.Sprintf("/tmp/%s-%s-bot.sock", host, nick),
 		Host:            host,
 		Nick:            nick,
+		nick:            nick,
 		ThrottleDelay:   200 * time.Millisecond,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
@@ -120,10 +123,14 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 	bot.AddTrigger(pingPong)
 	bot.AddTrigger(joinChannels)
 	bot.AddTrigger(getPrefix)
+	bot.AddTrigger(setNick)
+	bot.AddTrigger(nickError)
 	return &bot, nil
 }
 
-// Prefix gets bot's prefix
+// Prefix returns the bot's own prefix.
+// Can be useful if for example you want to
+// make an emoji wall that fits into one message perfectly
 func (bot *Bot) Prefix() *irc.Prefix {
 	bot.prefixMu.RLock()
 	prefix := &irc.Prefix{
@@ -159,7 +166,7 @@ func (bot *Bot) Uptime() string {
 func (bot *Bot) getNick() string {
 	bot.mu.Lock()
 	defer bot.mu.Unlock()
-	return bot.Nick
+	return bot.nick
 }
 
 func (bot *Bot) connect(host string) (err error) {
@@ -285,13 +292,9 @@ func (bot *Bot) sendUserCommand(user, realname, mode string) {
 	bot.Send(fmt.Sprintf("USER %s %s * :%s", user, mode, realname))
 }
 
-// SetNick sets the bots nick on the irc server
-// TODO: handle prefix change by tracking NICk
+// SetNick sets the bots nick on the irc server.
+// This does not alter *Bot.Nick, so be vary of that
 func (bot *Bot) SetNick(nick string) {
-	bot.mu.Lock()
-	bot.Nick = nick
-	bot.mu.Unlock()
-	bot.PrefixChange(nick, "", "")
 	bot.Send(fmt.Sprintf("NICK %s", nick))
 }
 
@@ -512,36 +515,36 @@ func (t Trigger) Handle(b *Bot, m *Message) {
 	}
 }
 
-// A trigger to respond to the servers ping pong messages
+// A trigger to respond to the servers ping pong messages.
 // If PingPong messages are not responded to, the server assumes the
 // client has timed out and will close the connection.
-// Note: this is automatically added in the IrcCon constructor
+// Note: this is automatically added in the IrcCon constructor.
 var pingPong = Trigger{
-	Condition: func(bot *Bot, m *Message) bool {
+	Condition: func(b *Bot, m *Message) bool {
 		return m.Command == "PING"
 	},
-	Action: func(bot *Bot, m *Message) {
-		bot.Send("PONG :" + m.Content)
+	Action: func(b *Bot, m *Message) {
+		b.Send("PONG :" + m.Content)
 	},
 }
 
 var joinChannels = Trigger{
-	Condition: func(bot *Bot, m *Message) bool {
+	Condition: func(b *Bot, m *Message) bool {
 		return m.Command == irc.RPL_WELCOME || m.Command == irc.RPL_ENDOFMOTD // 001 or 372
 	},
-	Action: func(bot *Bot, m *Message) {
-		bot.mu.Lock()
-		defer bot.mu.Unlock()
-		bot.didJoinChannels.Do(func() {
-			for _, channel := range bot.Channels {
+	Action: func(b *Bot, m *Message) {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		b.didJoinChannels.Do(func() {
+			for _, channel := range b.Channels {
 				splitchan := strings.SplitN(channel, ":", 2)
 				fmt.Println("splitchan is:", splitchan)
 				if len(splitchan) == 2 {
 					channel = splitchan[0]
 					password := splitchan[1]
-					bot.Send(fmt.Sprintf("JOIN %s %s", channel, password))
+					b.Send(fmt.Sprintf("JOIN %s %s", channel, password))
 				} else {
-					bot.Send(fmt.Sprintf("JOIN %s", channel))
+					b.Send(fmt.Sprintf("JOIN %s", channel))
 				}
 			}
 		})
@@ -550,18 +553,42 @@ var joinChannels = Trigger{
 
 // Get bot's prefix by catching its own join
 var getPrefix = Trigger{
-	Condition: func(bot *Bot, m *Message) bool {
-		return (m.Command == "JOIN" && m.Name == bot.Nick)
+	Condition: func(b *Bot, m *Message) bool {
+		return m.Command == "JOIN" && m.Name == b.getNick()
 	},
-	Action: func(bot *Bot, m *Message) {
-		bot.prefixMu.Lock()
-		bot.prefix = &irc.Prefix{
+	Action: func(b *Bot, m *Message) {
+		b.prefixMu.Lock()
+		b.prefix = &irc.Prefix{
 			Name: m.Prefix.Name,
 			User: m.Prefix.User,
 			Host: m.Prefix.Host,
 		}
-		bot.prefixMu.Unlock()
-		bot.Debug("Got prefix", "prefix", bot.Prefix().String())
+		b.prefixMu.Unlock()
+		b.Debug("Got prefix", "prefix", b.Prefix().String())
+	},
+}
+
+// Track nick changes internally so we can adjust the bot's prefix
+var setNick = Trigger{
+	Condition: func(b *Bot, m *Message) bool {
+		return m.Command == "NICK" && m.From == b.getNick()
+	},
+	Action: func(b *Bot, m *Message) {
+		b.mu.Lock()
+		b.nick = m.To
+		b.mu.Unlock()
+		b.PrefixChange(m.To, "", "")
+		b.Info("nick changed successfully")
+	},
+}
+
+// Throw errors on invalid nick changes
+var nickError = Trigger{
+	Condition: func(b *Bot, m *Message) bool {
+		return m.Command == "436" || m.Command == "433" || m.Command == "432" || m.Command == "431"
+	},
+	Action: func(b *Bot, m *Message) {
+		b.Error("nick change error", m.Params[1], m.Content)
 	},
 }
 
