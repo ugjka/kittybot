@@ -2,6 +2,7 @@ package kitty
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -196,9 +197,19 @@ func (bot *Bot) handleIncomingMessages() {
 		}()
 	}
 	if !bot.isClosing() {
-		log.Error("Read", "error", scan.Err())
+		bot.setClosing(true)
+		bot.Error("read incoming", "error", scan.Err())
+		if bot.unixlist != nil {
+			err := bot.unixlist.Close()
+			if err != nil {
+				bot.Error("closing unix listener", "error", err)
+			}
+		}
+		select {
+		case bot.outgoing <- "DISCONNECT":
+		default:
+		}
 	}
-	bot.Close()
 }
 
 // Handles message speed throtling
@@ -209,7 +220,14 @@ func (bot *Bot) handleOutgoingMessages() {
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
 			if !bot.isClosing() {
-				bot.Error("handleOutgoingMessages fmt.Fprint error", "err", err)
+				bot.setClosing(true)
+				bot.Error("send outgoing", "error", err)
+				if bot.unixlist != nil {
+					err := bot.unixlist.Close()
+					if err != nil {
+						bot.Error("closing unix listener", "error", err)
+					}
+				}
 			}
 			return
 		}
@@ -290,8 +308,8 @@ func (bot *Bot) Run() (hijacked bool) {
 	bot.mu.Unlock()
 	bot.wg = sync.WaitGroup{}
 	bot.hijacked = false
-	bot.closing = false
 	bot.reconnecting = false
+	bot.setClosing(false)
 	// Attempt reconnection
 	var hijack bool
 	if bot.HijackSession {
@@ -332,7 +350,7 @@ func (bot *Bot) Run() (hijacked bool) {
 		}
 	}
 	bot.wg.Wait()
-	log.Info("Disconnected")
+	bot.Info("Disconnected")
 	return bot.hijacked
 
 }
@@ -438,19 +456,33 @@ func (bot *Bot) isClosing() bool {
 	return bot.closing
 }
 
-// Close closes the bot
-func (bot *Bot) Close() {
+func (bot *Bot) setClosing(closing bool) {
 	bot.mu.Lock()
-	defer bot.mu.Unlock()
-	bot.closing = true
-	if bot.unixlist != nil {
-		bot.unixlist.Close()
+	bot.closing = closing
+	bot.mu.Unlock()
+}
+
+// Close closes the bot
+func (bot *Bot) Close() error {
+	if bot.isClosing() {
+		return errors.New("kittybot is already closing")
 	}
-	bot.con.Close()
+	bot.setClosing(true)
+	if bot.unixlist != nil {
+		err := bot.unixlist.Close()
+		if err != nil {
+			return err
+		}
+	}
+	err := bot.con.Close()
+	if err != nil {
+		return err
+	}
 	select {
 	case bot.outgoing <- "DISCONNECT":
 	default:
 	}
+	return nil
 }
 
 // AddTrigger adds a trigger to the bot's handlers

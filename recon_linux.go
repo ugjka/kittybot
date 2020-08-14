@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"net"
 
-	log "gopkg.in/inconshreveable/log15.v2"
-
 	"github.com/ftrvxmtrx/fd"
 	"gopkg.in/sorcix/irc.v2"
 )
@@ -30,7 +28,7 @@ func (bot *Bot) startUnixListener() {
 	con, err := list.AcceptUnix()
 	if err != nil {
 		if !bot.isClosing() {
-			log.Error("unix listener", "error", err)
+			bot.Error("unix listener", "error", err)
 		}
 		return
 	}
@@ -51,7 +49,17 @@ func (bot *Bot) startUnixListener() {
 	if err != nil {
 		panic(err)
 	}
-	bot.Close()
+	if !bot.isClosing() {
+		bot.setClosing(true)
+		err := bot.con.Close()
+		if err != nil {
+			bot.Error("hijack closing bot", "error", err)
+		}
+		select {
+		case bot.outgoing <- "DISCONNECT":
+		default:
+		}
+	}
 	bot.hijacked = true
 }
 
