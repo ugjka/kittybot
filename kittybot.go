@@ -273,7 +273,7 @@ func (bot *Bot) saslAuthenticate(user, pass string) {
 	bot.Debug("Beginning SASL Authentication")
 	bot.Send("CAP REQ :sasl")
 	bot.SetNick(bot.Nick)
-	bot.sendUserCommand(bot.Nick, bot.Nick, "8")
+	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
 }
 
 // standardRegistration performs a basic set of registration commands
@@ -283,7 +283,7 @@ func (bot *Bot) standardRegistration() {
 		bot.Send("PASS " + bot.Password)
 	}
 	bot.Debug("Sending standard registration")
-	bot.sendUserCommand(bot.Nick, bot.Nick, "8")
+	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
 	bot.SetNick(bot.Nick)
 }
 
