@@ -585,7 +585,8 @@ var setNick = Trigger{
 // Throw errors on invalid nick changes
 var nickError = Trigger{
 	Condition: func(b *Bot, m *Message) bool {
-		return m.Command == "436" || m.Command == "433" || m.Command == "432" || m.Command == "431"
+		return m.Command == "436" || m.Command == "433" ||
+			m.Command == "432" || m.Command == "431" || m.Command == "400"
 	},
 	Action: func(b *Bot, m *Message) {
 		b.Error("nick change error", m.Params[1], m.Content)
