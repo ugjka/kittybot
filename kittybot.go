@@ -268,6 +268,7 @@ func (bot *Bot) sendUserCommand(user, realname, mode string) {
 }
 
 // SetNick sets the bots nick on the irc server
+// TODO: handle prefix change by tracking NICk
 func (bot *Bot) SetNick(nick string) {
 	bot.mu.Lock()
 	bot.Nick = nick
