@@ -15,11 +15,11 @@ two functions, one for the condition, and one for the action.
 
 ```go
 var myTrigger = kitty.Trigger{
-    Condition: func(b *kitty.Bot, m *kitty.Message) bool {
+    Condition: func(bot *kitty.Bot, m *kitty.Message) bool {
         return m.From == "ugjka"
     },
-    Action: func(b *kitty.Bot, m *kitty.Message) {
-        b.Reply(m, "ugjka said something")
+    Action: func(bot *kitty.Bot, m *kitty.Message) {
+        bot.Reply(m, "ugjka said something")
     },
 }
 ```
@@ -27,12 +27,12 @@ var myTrigger = kitty.Trigger{
 The trigger makes the bot announce to everyone that something was said in the current channel. Use the code snippet below to make the bot and add the trigger.
 
 ```go
-mybot, err := kitty.NewBot("irc.freenode.net:6667","kittybot")
+bot, err := kitty.NewBot("irc.freenode.net:6667","kittybot")
 if err != nil {
     panic(err)
 }
-mybot.AddTrigger(MyTrigger)
-mybot.Run() // Blocks until exit
+bot.AddTrigger(MyTrigger)
+bot.Run() // Blocks until exit
 ```
 
 The 'To' field on the message object in triggers will refer to the channel that
@@ -91,10 +91,10 @@ sslOptions := func(bot *kitty.Bot) {
     bot.SSL = true
 }
 
-mysslcon, err := kitty.NewBot("irc.freenode.net:6667","kittybot",sslOptions)
+bot, err := kitty.NewBot("irc.freenode.net:6667","kittybot",sslOptions)
 // Handle err as you like
 
-mysslcon.Run() # Blocks until disconnect.
+bot.Run() # Blocks until disconnect.
 ```
 
 To use SASL to authenticate with the server:
@@ -105,10 +105,10 @@ saslOption = func(bot *kitty.Bot) {
     bot.Password = "somepassword"
 }
 
-mysslcon, err := kitty.NewBot("irc.freenode.net:6667", "kittybot", saslOption)
+bot, err := kitty.NewBot("irc.freenode.net:6667", "kittybot", saslOption)
 // Handle err as you like
 
-mysslcon.Run() # Blocks until disconnect.
+bot.Run() # Blocks until disconnect.
 ```
 
 Note: SASL does not require SSL but can be used in combination.
@@ -130,7 +130,7 @@ Example: This would only show INFO level and above logs, logging to STDOUT
 import log "gopkg.in/inconshreveable/log15.v2"
 
 logHandler := log.LvlFilterHandler(log.LvlInfo, log.StdoutHandler)
-mybot.Logger.SetHandler(logHandler)
+bot.Logger.SetHandler(logHandler)
 ```
 
 Note: This might be revisited in the future.
