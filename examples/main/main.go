@@ -16,20 +16,20 @@ var nick = flag.String("nick", "kittybot", "nickname for the bot")
 func main() {
 	flag.Parse()
 
-	hijackSession := func(b *kitty.Bot) {
-		b.HijackSession = true
+	hijackSession := func(bot *kitty.Bot) {
+		bot.HijackSession = true
 	}
-	channels := func(b *kitty.Bot) {
-		b.Channels = []string{"#test"}
+	channels := func(bot *kitty.Bot) {
+		bot.Channels = []string{"#test"}
 	}
-	b, err := kitty.NewBot(*serv, *nick, hijackSession, channels)
+	bot, err := kitty.NewBot(*serv, *nick, hijackSession, channels)
 	if err != nil {
 		panic(err)
 	}
 
-	b.AddTrigger(sayInfoMessage)
-	b.AddTrigger(longTrigger)
-	b.Logger.SetHandler(log.StdoutHandler)
+	bot.AddTrigger(sayInfoMessage)
+	bot.AddTrigger(longTrigger)
+	bot.Logger.SetHandler(log.StdoutHandler)
 	// logHandler := log.LvlFilterHandler(log.LvlInfo, log.StdoutHandler)
 	// or
 	// irc.Logger.SetHandler(logHandler)
@@ -37,28 +37,28 @@ func main() {
 	// irc.Logger.SetHandler(log.StreamHandler(os.Stdout, log.JsonFormat()))
 
 	// Start up bot (this blocks until we disconnect)
-	b.Run()
+	bot.Run()
 	fmt.Println("Bot shutting down.")
 }
 
 // This trigger replies Hello when you say hello
 var sayInfoMessage = kitty.Trigger{
-	Condition: func(b *kitty.Bot, m *kitty.Message) bool {
+	Condition: func(bot *kitty.Bot, m *kitty.Message) bool {
 		return m.Command == "PRIVMSG" && m.Content == "-info"
 	},
-	Action: func(b *kitty.Bot, m *kitty.Message) {
-		b.Reply(m, "Hello")
+	Action: func(bot *kitty.Bot, m *kitty.Message) {
+		bot.Reply(m, "Hello")
 	},
 }
 
 // This trigger replies Hello when you say hello
 var longTrigger = kitty.Trigger{
-	Condition: func(b *kitty.Bot, m *kitty.Message) bool {
+	Condition: func(bot *kitty.Bot, m *kitty.Message) bool {
 		return m.Command == "PRIVMSG" && m.Content == "-long"
 	},
-	Action: func(b *kitty.Bot, m *kitty.Message) {
-		b.Reply(m, "This is the first message")
+	Action: func(bot *kitty.Bot, m *kitty.Message) {
+		bot.Reply(m, "This is the first message")
 		time.Sleep(5 * time.Second)
-		b.Reply(m, "This is the second message")
+		bot.Reply(m, "This is the second message")
 	},
 }
