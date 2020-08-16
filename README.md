@@ -11,6 +11,10 @@ framework with the ability to be updated without losing connection to the
 server. To respond to an event, simply create a "Trigger" struct containing
 two functions, one for the condition, and one for the action.
 
+## Warning
+
+We are at v0.0.X, API may change without warning!!!
+
 ## Example Trigger
 
 ```go
