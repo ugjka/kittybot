@@ -14,7 +14,7 @@ two functions, one for the condition, and one for the action.
 
 ## Warning
 
-We are at v0.0.X, API may change without warning!!!
+We are at v0.0.X, the API may change without warning!!!
 
 ## Example Trigger
 
