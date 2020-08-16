@@ -249,7 +249,8 @@ func (bot *Bot) saslAuthenticate(user, pass string) {
 		var saslHandler = Trigger{
 			Condition: func(bot *Bot, mes *Message) bool {
 				return (strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "ACK") ||
-					(mes.Command == "AUTHENTICATE" && len(mes.Params) == 1 && mes.Params[0] == "+")
+					(mes.Command == "AUTHENTICATE" && len(mes.Params) == 1 && mes.Params[0] == "+") ||
+					(strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "NAK")
 			},
 			Action: func(bot *Bot, mes *Message) {
 				if strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "ACK" {
@@ -262,6 +263,10 @@ func (bot *Bot) saslAuthenticate(user, pass string) {
 					out := bytes.Join([][]byte{[]byte(*bot.saslUser), []byte(*bot.saslUser), []byte(*bot.saslPass)}, []byte{0})
 					encpass := base64.StdEncoding.EncodeToString(out)
 					bot.Send("AUTHENTICATE " + encpass)
+					bot.Send("CAP END")
+				}
+				if strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "NAK" {
+					bot.Error("SASL not supported by the server")
 					bot.Send("CAP END")
 				}
 			},
