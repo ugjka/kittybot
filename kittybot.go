@@ -280,17 +280,8 @@ func (bot *Bot) SetNick(nick string) {
 // to avoid looping between 2 instances).
 func (bot *Bot) Run() (hijacked bool) {
 	bot.Debug("Starting bot goroutines")
-	// These need to be reset on each run
-	bot.closer = make(chan struct{})
-	bot.outgoing = make(chan string, 16)
-	bot.mu.Lock()
-	bot.didJoinChannels = sync.Once{}
-	bot.mu.Unlock()
-	bot.wg = sync.WaitGroup{}
-	bot.hijacked = false
-	bot.reconnecting = false
-	bot.setClosing(false)
-	bot.ircV3.reset()
+	// Reset some things in case we re-run Run
+	bot.reset()
 	// Attempt reconnection
 	var hijack bool
 	if bot.HijackSession {
@@ -334,6 +325,20 @@ func (bot *Bot) Run() (hijacked bool) {
 	bot.Info("Disconnected")
 	return bot.hijacked
 
+}
+
+func (bot *Bot) reset() {
+	// These need to be reset on each run
+	bot.closer = make(chan struct{})
+	bot.outgoing = make(chan string, 16)
+	bot.mu.Lock()
+	bot.didJoinChannels = sync.Once{}
+	bot.mu.Unlock()
+	bot.wg = sync.WaitGroup{}
+	bot.hijacked = false
+	bot.reconnecting = false
+	bot.setClosing(false)
+	bot.ircV3.reset()
 }
 
 // Reply sends a message to where the message came from (user or channel)
