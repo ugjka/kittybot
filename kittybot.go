@@ -492,24 +492,24 @@ type Trigger struct {
 }
 
 // Handle executes the trigger action if the condition is satisfied
-func (t Trigger) Handle(b *Bot, m *Message) {
-	if t.Condition(b, m) {
-		t.Action(b, m)
+func (t Trigger) Handle(bot *Bot, m *Message) {
+	if t.Condition(bot, m) {
+		t.Action(bot, m)
 	}
 }
 
 // SaslAuth enables SASL authentification
 func SaslAuth(pass string) func(*Bot) {
-	return func(b *Bot) {
-		b.SASL = true
-		b.Password = pass
+	return func(bot *Bot) {
+		bot.SASL = true
+		bot.Password = pass
 	}
 }
 
 // ReconOpt enables session hijacking
 func ReconOpt() func(*Bot) {
-	return func(b *Bot) {
-		b.HijackSession = true
+	return func(bot *Bot) {
+		bot.HijackSession = true
 	}
 }
 
