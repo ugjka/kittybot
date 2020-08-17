@@ -124,6 +124,8 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 	bot.AddTrigger(setNick)
 	bot.AddTrigger(nickError)
 	bot.AddTrigger(bot.ircV3)
+	bot.AddTrigger(saslFail)
+	bot.AddTrigger(saslSuccess)
 	return &bot, nil
 }
 
