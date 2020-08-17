@@ -14,9 +14,7 @@ import (
 	logext "gopkg.in/inconshreveable/log15.v2/ext"
 	"gopkg.in/sorcix/irc.v2"
 
-	"bytes"
 	"crypto/tls"
-	"encoding/base64"
 )
 
 // Bot implements an irc bot to be connected to a given server
@@ -46,10 +44,9 @@ type Bot struct {
 	didJoinChannels sync.Once
 	didAddSASLtrig  sync.Once
 	wg              sync.WaitGroup
+	// IRC V3 CAPS and
 	// SASL credentials
-	saslUser *string
-	saslPass *string
-
+	ircV3 *ircV3caps
 	// Exported fields
 	Host          string
 	Password      string
@@ -96,6 +93,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 		Host:            host,
 		Nick:            nick,
 		nick:            nick,
+		ircV3:           &ircV3caps{},
 		ThrottleDelay:   200 * time.Millisecond,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
@@ -125,6 +123,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 	bot.AddTrigger(getPrefix)
 	bot.AddTrigger(setNick)
 	bot.AddTrigger(nickError)
+	bot.AddTrigger(bot.ircV3)
 	return &bot, nil
 }
 
@@ -245,44 +244,17 @@ func (bot *Bot) handleOutgoingMessages() {
 // saslAuthenticate performs SASL authentication
 // ref: https://github.com/atheme/charybdis/blob/master/doc/sasl.txt
 func (bot *Bot) saslAuthenticate(user, pass string) {
-	bot.didAddSASLtrig.Do(func() {
-		var saslHandler = Trigger{
-			Condition: func(bot *Bot, mes *Message) bool {
-				return (strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "ACK") ||
-					(mes.Command == "AUTHENTICATE" && len(mes.Params) == 1 && mes.Params[0] == "+") ||
-					(strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "NAK")
-			},
-			Action: func(bot *Bot, mes *Message) {
-				if strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "ACK" {
-					bot.Debug("Recieved SASL ACK")
-					bot.Send("AUTHENTICATE PLAIN")
-				}
-
-				if mes.Command == "AUTHENTICATE" && len(mes.Params) == 1 && mes.Params[0] == "+" {
-					bot.Debug("Got auth message!")
-					out := bytes.Join([][]byte{[]byte(*bot.saslUser), []byte(*bot.saslUser), []byte(*bot.saslPass)}, []byte{0})
-					encpass := base64.StdEncoding.EncodeToString(out)
-					bot.Send("AUTHENTICATE " + encpass)
-					bot.Send("CAP END")
-				}
-				if strings.TrimSpace(mes.Content) == "sasl" && len(mes.Params) > 1 && mes.Params[1] == "NAK" {
-					bot.Error("SASL not supported by the server")
-					bot.Send("CAP END")
-				}
-			},
-		}
-		bot.AddTrigger(saslHandler)
-	})
-	bot.saslUser = &user
-	bot.saslPass = &pass
+	bot.ircV3.saslEnable()
+	bot.ircV3.saslCreds(user, pass)
 	bot.Debug("Beginning SASL Authentication")
-	bot.Send("CAP REQ :sasl")
+	bot.Send("CAP LS")
 	bot.SetNick(bot.Nick)
 	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
 }
 
 // standardRegistration performs a basic set of registration commands
 func (bot *Bot) standardRegistration() {
+	bot.Send("CAP LS")
 	//Server registration
 	if bot.Password != "" {
 		bot.Send("PASS " + bot.Password)
