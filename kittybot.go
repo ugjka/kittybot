@@ -290,6 +290,7 @@ func (bot *Bot) Run() (hijacked bool) {
 	bot.hijacked = false
 	bot.reconnecting = false
 	bot.setClosing(false)
+	bot.ircV3.reset()
 	// Attempt reconnection
 	var hijack bool
 	if bot.HijackSession {

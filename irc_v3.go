@@ -29,6 +29,14 @@ func (h *ircV3caps) saslCreds(user, pass string) {
 	h.mu.Unlock()
 }
 
+func (h *ircV3caps) reset() {
+	h.mu.Lock()
+	h.saslOn = false
+	h.done = false
+	h.caps = []string{}
+	h.mu.Unlock()
+}
+
 func (h *ircV3caps) saslAuth(m *Message) bool {
 	return m.Command == "AUTHENTICATE" && len(m.Params) == 1 && m.Params[0] == "+"
 }
