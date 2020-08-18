@@ -44,9 +44,9 @@ type Bot struct {
 	didJoinChannels sync.Once
 	didAddSASLtrig  sync.Once
 	wg              sync.WaitGroup
-	// IRC V3 CAPS and
+	// IRC CAPS and
 	// SASL credentials
-	ircV3 *ircV3caps
+	capHandler *ircCaps
 	// Exported fields
 	Host          string
 	Password      string
@@ -54,6 +54,9 @@ type Bot struct {
 	SSL           bool
 	SASL          bool
 	HijackSession bool
+	// Set it if long messages get truncated
+	// on the receiving end
+	MsgSafetyBuffer bool
 	// HijackAfterFunc executes in its own goroutine after a succesful session hijack
 	// If you need to do something after a hijack
 	// for example, to run some irc commands or to restore some state
@@ -93,7 +96,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 		Host:            host,
 		Nick:            nick,
 		nick:            nick,
-		ircV3:           &ircV3caps{},
+		capHandler:      &ircCaps{},
 		ThrottleDelay:   200 * time.Millisecond,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
@@ -107,7 +110,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 		prefix: &irc.Prefix{
 			Name: nick,
 			User: nick,
-			Host: strings.Repeat("*", 510-400-len(nick)*2),
+			Host: strings.Repeat("*", 510-353-len(nick)*2),
 		},
 		prefixMu: &sync.RWMutex{},
 	}
@@ -123,7 +126,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 	bot.AddTrigger(getPrefix)
 	bot.AddTrigger(setNick)
 	bot.AddTrigger(nickError)
-	bot.AddTrigger(bot.ircV3)
+	bot.AddTrigger(bot.capHandler)
 	bot.AddTrigger(saslFail)
 	bot.AddTrigger(saslSuccess)
 	return &bot, nil
@@ -157,6 +160,16 @@ func (bot *Bot) PrefixChange(name, user, host string) {
 		bot.prefix.Host = host
 	}
 	bot.prefixMu.Unlock()
+}
+
+// CapStatus returns whether the server capability is enabled and present
+func (bot *Bot) CapStatus(cap string) (enabled, present bool) {
+	bot.capHandler.mu.Lock()
+	defer bot.capHandler.mu.Unlock()
+	if v, ok := bot.capHandler.capsEnabled[cap]; ok {
+		return v, true
+	}
+	return false, false
 }
 
 // Uptime returns the uptime of the bot
@@ -246,8 +259,8 @@ func (bot *Bot) handleOutgoingMessages() {
 // saslAuthenticate performs SASL authentication
 // ref: https://github.com/atheme/charybdis/blob/master/doc/sasl.txt
 func (bot *Bot) saslAuthenticate(user, pass string) {
-	bot.ircV3.saslEnable()
-	bot.ircV3.saslCreds(user, pass)
+	bot.capHandler.saslEnable()
+	bot.capHandler.saslCreds(user, pass)
 	bot.Debug("Beginning SASL Authentication")
 	bot.Send("CAP LS")
 	bot.SetNick(bot.Nick)
@@ -269,12 +282,6 @@ func (bot *Bot) standardRegistration() {
 // Set username, real name, and mode
 func (bot *Bot) sendUserCommand(user, realname, mode string) {
 	bot.Send(fmt.Sprintf("USER %s %s * :%s", user, mode, realname))
-}
-
-// SetNick sets the bots nick on the irc server.
-// This does not alter *Bot.Nick, so be vary of that
-func (bot *Bot) SetNick(nick string) {
-	bot.Send(fmt.Sprintf("NICK %s", nick))
 }
 
 // Run starts the bot and connects to the server. Blocks until we disconnect from the server.
@@ -340,45 +347,30 @@ func (bot *Bot) reset() {
 	bot.hijacked = false
 	bot.reconnecting = false
 	bot.setClosing(false)
-	bot.ircV3.reset()
+	bot.capHandler.reset()
 }
 
-// Reply sends a message to where the message came from (user or channel)
-func (bot *Bot) Reply(m *Message, text string) {
-	var target string
-	if strings.Contains(m.To, "#") {
-		target = m.To
-	} else {
-		target = m.From
+func (bot *Bot) maxMsgSize(command, who string) int {
+	// Maximum message size that fits into 512 bytes.
+	// Carriage return and linefeed are not counted here as they
+	// are added by handleOutgoingMessages()
+	maxSize := 510 - len(fmt.Sprintf(":%s %s %s :", bot.Prefix(), command, who))
+	if _, present := bot.CapStatus(CapIdentifyMSG); present {
+		maxSize--
 	}
-	bot.Msg(target, text)
-}
-
-// Msg sends a message to 'who' (user or channel)
-func (bot *Bot) Msg(who, text string) {
-	const command = "PRIVMSG"
-	for _, line := range splitText(text, command, who, bot.Prefix()) {
-		bot.Send(command + " " + who + " :" + line)
+	// https://ircv3.net/specs/extensions/multiline
+	if bot.MsgSafetyBuffer {
+		maxSize -= 10
 	}
-}
-
-// Notice sends a NOTICE message to 'who' (user or channel)
-func (bot *Bot) Notice(who, text string) {
-	const command = "NOTICE"
-	for _, line := range splitText(text, command, who, bot.Prefix()) {
-		bot.Send(command + " " + who + " :" + line)
-	}
+	return maxSize
 }
 
 // Splits a given string into a string slice, in chunks ending
 // either with \n, or with \r\n, or splitting text to maximally allowed size.
-func splitText(text, command, who string, prefix *irc.Prefix) []string {
+func (bot *Bot) splitText(text, command, who string) []string {
 	var ret []string
 
-	// Maximum message size that fits into 512 bytes.
-	// Carriage return and linefeed are not counted here as they
-	// are added by handleOutgoingMessages()
-	maxSize := 510 - len(fmt.Sprintf(":%s %s %s :", prefix, command, who))
+	maxSize := bot.maxMsgSize(command, who)
 
 	scanner := bufio.NewScanner(strings.NewReader(text))
 	for scanner.Scan() {
@@ -402,46 +394,6 @@ func splitText(text, command, who string, prefix *irc.Prefix) []string {
 		ret = append(ret, line)
 	}
 	return ret
-}
-
-// Action sends an action to 'who' (user or channel)
-func (bot *Bot) Action(who, text string) {
-	msg := fmt.Sprintf("\u0001ACTION %s\u0001", text)
-	bot.Msg(who, msg)
-}
-
-// Topic sets the channel 'c' topic (requires bot has proper permissions)
-func (bot *Bot) Topic(c, topic string) {
-	str := fmt.Sprintf("TOPIC %s :%s", c, topic)
-	bot.Send(str)
-}
-
-// Send any command to the server
-func (bot *Bot) Send(command string) {
-	bot.outgoing <- command
-}
-
-// ChMode is used to change users modes in a channel
-// operator = "+o" deop = "-o"
-// ban = "+b"
-func (bot *Bot) ChMode(user, channel, mode string) {
-	bot.Send("MODE " + channel + " " + mode + " " + user)
-}
-
-// Join a channel
-func (bot *Bot) Join(ch string) {
-	bot.Send("JOIN " + ch)
-}
-
-// Part a channel
-func (bot *Bot) Part(ch, msg string) {
-	bot.Send("PART " + ch + " " + msg)
-}
-
-func (bot *Bot) isClosing() bool {
-	bot.mu.Lock()
-	defer bot.mu.Unlock()
-	return bot.closing
 }
 
 func (bot *Bot) setClosing(closing bool) {
