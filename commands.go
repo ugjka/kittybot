@@ -26,7 +26,9 @@ func (bot *Bot) Msg(who, text string) {
 	}
 }
 
-// MsgMaxSize returns maximum number of bytes that fit into one message
+// MsgMaxSize returns maximum number of bytes that fit into one message.
+// Useful, for example, if you want to generate a wall of emojis that fit into one message,
+// or you want to cap some output to one message
 func (bot *Bot) MsgMaxSize(who string) int {
 	const command = "PRIVMSG"
 	maxSize := bot.maxMsgSize(command, who)
@@ -41,7 +43,9 @@ func (bot *Bot) Notice(who, text string) {
 	}
 }
 
-// NoticeMaxSize returns maximum number of bytes that fit into one message
+// NoticeMaxSize returns maximum number of bytes that fit into one message.
+// Useful, for example, if you want to generate a wall of emojis that fit into one message,
+// or you want to cap some output to one message
 func (bot *Bot) NoticeMaxSize(who string) int {
 	const command = "NOTICE"
 	maxSize := bot.maxMsgSize(command, who)
