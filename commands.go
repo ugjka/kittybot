@@ -9,13 +9,17 @@ import (
 
 // Reply sends a message to where the message came from (user or channel)
 func (bot *Bot) Reply(m *Message, text string) {
+	bot.Msg(replyTarget(m), text)
+}
+
+func replyTarget(m *Message) string {
 	var target string
 	if strings.Contains(m.To, "#") {
 		target = m.To
 	} else {
 		target = m.From
 	}
-	bot.Msg(target, text)
+	return target
 }
 
 // Msg sends a message to 'who' (user or channel)
@@ -32,6 +36,14 @@ func (bot *Bot) Msg(who, text string) {
 func (bot *Bot) MsgMaxSize(who string) int {
 	const command = "PRIVMSG"
 	maxSize := bot.maxMsgSize(command, who)
+	return maxSize
+}
+
+// MsgMaxReplySize is just like MsgMaxSize
+// but calculates message size for the reply target
+func (bot *Bot) MsgMaxReplySize(m *Message) int {
+	const command = "PRIVMSG"
+	maxSize := bot.maxMsgSize(command, replyTarget(m))
 	return maxSize
 }
 
