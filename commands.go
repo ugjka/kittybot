@@ -118,6 +118,9 @@ func (bot *Bot) maxMsgSize(command, who string) int {
 func (bot *Bot) splitText(text, command, who string) []string {
 	var ret []string
 
+	// Sanitize input
+	text = strings.ToValidUTF8(text, "")
+
 	maxSize := bot.maxMsgSize(command, who)
 
 	scanner := bufio.NewScanner(strings.NewReader(text))
