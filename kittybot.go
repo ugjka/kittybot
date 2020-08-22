@@ -1,3 +1,4 @@
+// Package kitty is IRCv3 enabled framework for writing IRC bots
 package kitty
 
 import (
