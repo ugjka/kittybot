@@ -131,49 +131,32 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 	return &bot, nil
 }
 
-// Prefix returns the bot's own prefix.
-// Can be useful if for example you want to
-// make an emoji wall that fits into one message perfectly
-func (bot *Bot) Prefix() *irc.Prefix {
-	bot.prefixMu.RLock()
-	prefix := &irc.Prefix{
-		Name: bot.prefix.Name,
-		User: bot.prefix.User,
-		Host: bot.prefix.Host,
-	}
-	bot.prefixMu.RUnlock()
-	return prefix
+// saslAuthenticate performs SASL authentication
+// ref: https://github.com/atheme/charybdis/blob/master/doc/sasl.txt
+func (bot *Bot) saslAuthenticate(user, pass string) {
+	bot.capHandler.saslEnable()
+	bot.capHandler.saslCreds(user, pass)
+	bot.Debug("Beginning SASL Authentication")
+	bot.Send("CAP LS")
+	bot.SetNick(bot.Nick)
+	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
 }
 
-// PrefixChange changes bot's prefix,
-// use empty strings to make no change
-func (bot *Bot) PrefixChange(name, user, host string) {
-	bot.prefixMu.Lock()
-	if name != "" {
-		bot.prefix.Name = name
+// standardRegistration performs a basic set of registration commands
+func (bot *Bot) standardRegistration() {
+	bot.Send("CAP LS")
+	//Server registration
+	if bot.Password != "" {
+		bot.Send("PASS " + bot.Password)
 	}
-	if user != "" {
-		bot.prefix.User = user
-	}
-	if host != "" {
-		bot.prefix.Host = host
-	}
-	bot.prefixMu.Unlock()
+	bot.Debug("Sending standard registration")
+	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
+	bot.SetNick(bot.Nick)
 }
 
-// CapStatus returns whether the server capability is enabled and present
-func (bot *Bot) CapStatus(cap string) (enabled, present bool) {
-	bot.capHandler.mu.Lock()
-	defer bot.capHandler.mu.Unlock()
-	if v, ok := bot.capHandler.capsEnabled[cap]; ok {
-		return v, true
-	}
-	return false, false
-}
-
-// Uptime returns the uptime of the bot
-func (bot *Bot) Uptime() string {
-	return fmt.Sprintf("Started: %s, Uptime: %s", bot.started, time.Since(bot.started))
+// Set username, real name, and mode
+func (bot *Bot) sendUserCommand(user, realname, mode string) {
+	bot.Send(fmt.Sprintf("USER %s %s * :%s", user, mode, realname))
 }
 
 func (bot *Bot) getNick() string {
@@ -255,34 +238,6 @@ func (bot *Bot) handleOutgoingMessages() {
 	}
 }
 
-// saslAuthenticate performs SASL authentication
-// ref: https://github.com/atheme/charybdis/blob/master/doc/sasl.txt
-func (bot *Bot) saslAuthenticate(user, pass string) {
-	bot.capHandler.saslEnable()
-	bot.capHandler.saslCreds(user, pass)
-	bot.Debug("Beginning SASL Authentication")
-	bot.Send("CAP LS")
-	bot.SetNick(bot.Nick)
-	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
-}
-
-// standardRegistration performs a basic set of registration commands
-func (bot *Bot) standardRegistration() {
-	bot.Send("CAP LS")
-	//Server registration
-	if bot.Password != "" {
-		bot.Send("PASS " + bot.Password)
-	}
-	bot.Debug("Sending standard registration")
-	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
-	bot.SetNick(bot.Nick)
-}
-
-// Set username, real name, and mode
-func (bot *Bot) sendUserCommand(user, realname, mode string) {
-	bot.Send(fmt.Sprintf("USER %s %s * :%s", user, mode, realname))
-}
-
 // Run starts the bot and connects to the server. Blocks until we disconnect from the server.
 // Returns true if we have been hijacked (if you loop over Run it might be wise to break on hijack
 // to avoid looping between 2 instances).
@@ -335,24 +290,14 @@ func (bot *Bot) Run() (hijacked bool) {
 
 }
 
-func (bot *Bot) reset() {
-	// These need to be reset on each run
-	bot.closer = make(chan struct{})
-	bot.outgoing = make(chan string, 16)
-	bot.mu.Lock()
-	bot.didJoinChannels = sync.Once{}
-	bot.mu.Unlock()
-	bot.wg = sync.WaitGroup{}
-	bot.hijacked = false
-	bot.reconnecting = false
-	bot.setClosing(false)
-	bot.capHandler.reset()
-}
-
-func (bot *Bot) setClosing(closing bool) {
-	bot.mu.Lock()
-	bot.closing = closing
-	bot.mu.Unlock()
+// CapStatus returns whether the server capability is enabled and present
+func (bot *Bot) CapStatus(cap string) (enabled, present bool) {
+	bot.capHandler.mu.Lock()
+	defer bot.capHandler.mu.Unlock()
+	if v, ok := bot.capHandler.capsEnabled[cap]; ok {
+		return v, true
+	}
+	return false, false
 }
 
 // Close closes the bot
@@ -378,9 +323,80 @@ func (bot *Bot) Close() error {
 	return nil
 }
 
-// AddTrigger adds a trigger to the bot's handlers
-func (bot *Bot) AddTrigger(h Handler) {
-	bot.handlers = append(bot.handlers, h)
+// Prefix returns the bot's own prefix.
+// Can be useful if for example you want to
+// make an emoji wall that fits into one message perfectly
+func (bot *Bot) Prefix() *irc.Prefix {
+	bot.prefixMu.RLock()
+	prefix := &irc.Prefix{
+		Name: bot.prefix.Name,
+		User: bot.prefix.User,
+		Host: bot.prefix.Host,
+	}
+	bot.prefixMu.RUnlock()
+	return prefix
+}
+
+// PrefixChange changes bot's prefix,
+// use empty strings to make no change
+func (bot *Bot) PrefixChange(name, user, host string) {
+	bot.prefixMu.Lock()
+	if name != "" {
+		bot.prefix.Name = name
+	}
+	if user != "" {
+		bot.prefix.User = user
+	}
+	if host != "" {
+		bot.prefix.Host = host
+	}
+	bot.prefixMu.Unlock()
+}
+
+// ReconOpt enables session hijacking
+func ReconOpt() func(*Bot) {
+	return func(bot *Bot) {
+		bot.HijackSession = true
+	}
+}
+
+// SaslAuth enables SASL authentification
+func SaslAuth(pass string) func(*Bot) {
+	return func(bot *Bot) {
+		bot.SASL = true
+		bot.Password = pass
+	}
+}
+
+// Uptime returns the uptime of the bot
+func (bot *Bot) Uptime() string {
+	return fmt.Sprintf("Started: %s, Uptime: %s", bot.started, time.Since(bot.started))
+}
+
+func (bot *Bot) reset() {
+	// These need to be reset on each run
+	bot.closer = make(chan struct{})
+	bot.outgoing = make(chan string, 16)
+	bot.mu.Lock()
+	bot.didJoinChannels = sync.Once{}
+	bot.mu.Unlock()
+	bot.wg = sync.WaitGroup{}
+	bot.hijacked = false
+	bot.reconnecting = false
+	bot.setClosing(false)
+	bot.capHandler.reset()
+}
+
+func (bot *Bot) isClosing() bool {
+	bot.mu.Lock()
+	defer bot.mu.Unlock()
+	return bot.closing
+}
+
+func (bot *Bot) setClosing(closing bool) {
+	bot.mu.Lock()
+	bot.closing = closing
+	bot.mu.Unlock()
 }
 
 // Handler is used to subscribe and react to events on the bot Server
@@ -398,25 +414,15 @@ type Trigger struct {
 	Action func(*Bot, *Message)
 }
 
+// AddTrigger adds a trigger to the bot's handlers
+func (bot *Bot) AddTrigger(h Handler) {
+	bot.handlers = append(bot.handlers, h)
+}
+
 // Handle executes the trigger action if the condition is satisfied
 func (t Trigger) Handle(bot *Bot, m *Message) {
 	if t.Condition(bot, m) {
 		t.Action(bot, m)
-	}
-}
-
-// SaslAuth enables SASL authentification
-func SaslAuth(pass string) func(*Bot) {
-	return func(bot *Bot) {
-		bot.SASL = true
-		bot.Password = pass
-	}
-}
-
-// ReconOpt enables session hijacking
-func ReconOpt() func(*Bot) {
-	return func(bot *Bot) {
-		bot.HijackSession = true
 	}
 }
 
