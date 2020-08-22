@@ -41,7 +41,6 @@ type Bot struct {
 	// Log15 loggger
 	log.Logger
 	didJoinChannels sync.Once
-	didAddSASLtrig  sync.Once
 	wg              sync.WaitGroup
 	// IRC CAPS and
 	// SASL credentials
