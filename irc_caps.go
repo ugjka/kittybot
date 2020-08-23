@@ -105,6 +105,7 @@ var allowedCAPs = map[string]struct{}{
 	CapInviteNotify:  {},
 	CapMultiPrefix:   {},
 	CapCapNotify:     {},
+	CapSetName:       {},
 }
 
 // CapAccountNotify is account-notify CAP
@@ -139,3 +140,6 @@ const CapIdentifyMSG = "identify-msg"
 
 // CapTLS is tls CAP
 const CapTLS = "tls"
+
+// CapSetName is setname CAP
+const CapSetName = "setname"
