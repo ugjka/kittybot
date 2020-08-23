@@ -42,14 +42,6 @@ func (bot *Bot) MsgMaxSize(who string) int {
 	return maxSize
 }
 
-// MsgMaxReplySize is just like MsgMaxSize
-// but calculates message size for the reply target
-func (bot *Bot) MsgMaxReplySize(m *Message) int {
-	const command = "PRIVMSG"
-	maxSize := bot.maxMsgSize(command, replyTarget(m))
-	return maxSize
-}
-
 // Notice sends a NOTICE message to 'who' (user or channel)
 func (bot *Bot) Notice(who, text string) {
 	const command = "NOTICE"
@@ -75,6 +67,14 @@ func (bot *Bot) Part(ch, msg string) {
 // Reply sends a message to where the message came from (user or channel)
 func (bot *Bot) Reply(m *Message, text string) {
 	bot.Msg(replyTarget(m), text)
+}
+
+// ReplyMaxSize is just like MsgMaxSize
+// but calculates message size for the reply target
+func (bot *Bot) ReplyMaxSize(m *Message) int {
+	const command = "PRIVMSG"
+	maxSize := bot.maxMsgSize(command, replyTarget(m))
+	return maxSize
 }
 
 // Send any command to the server
