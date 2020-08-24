@@ -163,6 +163,7 @@ currently being used for:
 
 ## Contributors before the hard fork
 
+- @[sorcix](https://github.com/sorcix)
 - @[whyrusleeping](https://github.com/whyrusleeping)
 - @[flexd](https://github.com/flexd)
 - @[icholy](https://github.com/icholy)
