@@ -428,7 +428,7 @@ func (t Trigger) Handle(bot *Bot, m *Message) {
 
 // Message represents a message received from the server
 type Message struct {
-	// irc.Message from sorcix
+	// ircmsg.Message with extended data, like GetTag() for IRCv3 tags
 	*ircmsg.Message
 	// Content generally refers to the text of a PRIVMSG
 	Content string
