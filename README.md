@@ -50,14 +50,14 @@ For more example triggers, check the examples directory.
 
 The message struct is primarily what you will be dealing with when building
 triggers or reading off the Incoming channel.
-This is mainly the sorcix.Message struct with some additions.
-See [https://github.com/sorcix/irc/blob/master/message.go#L153](https://github.com/sorcix/irc/blob/master/message.go#L153)
+This is mainly the ircmsg.Message struct with some additions.
+See [https://github.com/ugjka/ircmsg/blob/master/message.go#L221](https://github.com/ugjka/ircmsg/blob/master/message.go#L221)
 
 ```go
  // Message represents a message received from the server
  type Message struct {
-     // irc.Message from sorcix
-     *irc.Message
+     // ircmsg.Message with extended data, like GetTag() for IRCv3 tags
+     *ircmsg.Message
      // Content generally refers to the text of a PRIVMSG
      Content string
 
@@ -159,10 +159,7 @@ currently being used for:
 
 [Client Protocol, RFC 2812](http://tools.ietf.org/html/rfc2812)
 [SASL Authentication Documentation](https://tools.ietf.org/html/draft-mitchell-irc-capabilities-01)
-
-## Credits
-
-[sorcix](http://github.com/sorcix) for his Message Parsing code
+[IRCv3 Documentation](https://ircv3.net/irc/)
 
 ## Contributors before the hard fork
 
