@@ -1,8 +1,9 @@
 package kitty
 
 import (
+	"bufio"
+	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net"
 
 	"github.com/ftrvxmtrx/fd"
@@ -44,8 +45,12 @@ func (bot *Bot) startUnixListener() {
 		panic(err)
 	}
 
-	// Send own prefix
-	_, err = io.WriteString(con, bot.Prefix().String())
+	// Send own prefix and CAPs
+	_, err = io.WriteString(con, bot.Prefix().String()+"\n")
+	if err != nil {
+		panic(err)
+	}
+	err = json.NewEncoder(con).Encode(bot.capHandler.capsEnabled)
 	if err != nil {
 		panic(err)
 	}
@@ -82,14 +87,21 @@ func (bot *Bot) hijackSession() bool {
 		panic(err)
 	}
 
-	// Read the reminder which should be our prefix
-	prefix, err := ioutil.ReadAll(con)
+	// Read the reminder which should be our prefix and CAPs
+	sc := bufio.NewScanner(con)
+	if !sc.Scan() {
+		panic(sc.Err())
+	}
+	bot.prefixMu.Lock()
+	bot.prefix = ircmsg.ParsePrefix(sc.Text())
+	bot.prefixMu.Unlock()
+	if !sc.Scan() {
+		panic(sc.Err())
+	}
+	err = json.Unmarshal(sc.Bytes(), &bot.capHandler.capsEnabled)
 	if err != nil {
 		panic(err)
 	}
-	bot.prefixMu.Lock()
-	bot.prefix = ircmsg.ParsePrefix(string(prefix))
-	bot.prefixMu.Unlock()
 	bot.reconnecting = true
 	bot.con = netcon
 	return true
