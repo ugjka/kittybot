@@ -106,6 +106,10 @@ var allowedCAPs = map[string]struct{}{
 	CapMultiPrefix:   {},
 	CapCapNotify:     {},
 	CapSetName:       {},
+	CapMonitor:       {},
+	CapServerTime:    {},
+	CapAccountTag:    {},
+	CapMessageTags:   {},
 }
 
 // CapAccountNotify is account-notify CAP
@@ -143,3 +147,15 @@ const CapTLS = "tls"
 
 // CapSetName is setname CAP
 const CapSetName = "setname"
+
+// CapMonitor is monitor CAP
+const CapMonitor = "monitor"
+
+// CapServerTime is server-time CAP
+const CapServerTime = "server-time"
+
+// CapAccountTag is account-tag CAP
+const CapAccountTag = "account-tag"
+
+// CapMessageTags is message-tags CAP
+const CapMessageTags = "message-tags"

@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/ftrvxmtrx/fd"
-	"gopkg.in/sorcix/irc.v2"
+	"github.com/ugjka/ircmsg"
 )
 
 // startUnixListener starts up a unix domain socket listener for reconnects to
@@ -95,7 +95,7 @@ func (bot *Bot) hijackSession() bool {
 		panic(err)
 	}
 	bot.prefixMu.Lock()
-	bot.prefix = irc.ParsePrefix(string(prefix))
+	bot.prefix = ircmsg.ParsePrefix(string(prefix))
 	bot.prefixMu.Unlock()
 	bot.reconnecting = true
 	bot.con = netcon

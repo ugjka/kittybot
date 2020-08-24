@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/sorcix/irc.v2"
+	"github.com/ugjka/ircmsg"
 )
 
 // A trigger to respond to the servers ping pong messages.
@@ -22,7 +22,7 @@ var pingPong = Trigger{
 
 var joinChannels = Trigger{
 	Condition: func(bot *Bot, m *Message) bool {
-		return m.Command == irc.RPL_WELCOME || m.Command == irc.RPL_ENDOFMOTD // 001 or 372
+		return m.Command == "001" || m.Command == "372"
 	},
 	Action: func(bot *Bot, m *Message) {
 		bot.mu.Lock()
@@ -50,7 +50,7 @@ var getPrefix = Trigger{
 	},
 	Action: func(bot *Bot, m *Message) {
 		bot.prefixMu.Lock()
-		bot.prefix = &irc.Prefix{
+		bot.prefix = &ircmsg.Prefix{
 			Name: m.Prefix.Name,
 			User: m.Prefix.User,
 			Host: m.Prefix.Host,

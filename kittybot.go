@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ugjka/ircmsg"
 	log "gopkg.in/inconshreveable/log15.v2"
 	logext "gopkg.in/inconshreveable/log15.v2/ext"
-	"gopkg.in/sorcix/irc.v2"
 
 	"crypto/tls"
 )
@@ -77,7 +77,7 @@ type Bot struct {
 
 	TLSConfig tls.Config
 	// Bot's prefix
-	prefix   *irc.Prefix
+	prefix   *ircmsg.Prefix
 	prefixMu *sync.RWMutex
 }
 
@@ -106,7 +106,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 		Password:        "",
 		// Somewhat sane default if for some reason we can't retrieve bot's prefix
 		// for example, if the server doesn't advertise joins
-		prefix: &irc.Prefix{
+		prefix: &ircmsg.Prefix{
 			Name: nick,
 			User: nick,
 			Host: strings.Repeat("*", 510-353-len(nick)*2),
@@ -192,7 +192,7 @@ func (bot *Bot) handleIncomingMessages() {
 		// Disconnect if we have seen absolutely nothing for 300 seconds
 		bot.con.SetDeadline(time.Now().Add(bot.PingTimeout))
 		msg := parseMessage(scan.Text())
-		bot.Debug("Incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Trailing", msg.Trailing())
+		bot.Debug("Incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Tags", msg.Tags, "msg.Trailing", msg.Trailing())
 		go func() {
 			for _, h := range bot.handlers {
 				go h.Handle(bot, msg)
@@ -326,9 +326,9 @@ func (bot *Bot) Close() error {
 // Prefix returns the bot's own prefix.
 // Can be useful if for example you want to
 // make an emoji wall that fits into one message perfectly
-func (bot *Bot) Prefix() *irc.Prefix {
+func (bot *Bot) Prefix() *ircmsg.Prefix {
 	bot.prefixMu.RLock()
-	prefix := &irc.Prefix{
+	prefix := &ircmsg.Prefix{
 		Name: bot.prefix.Name,
 		User: bot.prefix.User,
 		Host: bot.prefix.Host,
@@ -429,7 +429,7 @@ func (t Trigger) Handle(bot *Bot, m *Message) {
 // Message represents a message received from the server
 type Message struct {
 	// irc.Message from sorcix
-	*irc.Message
+	*ircmsg.Message
 	// Content generally refers to the text of a PRIVMSG
 	Content string
 
@@ -448,7 +448,7 @@ type Message struct {
 // Returns nil if the Message is invalid.
 func parseMessage(raw string) (m *Message) {
 	m = new(Message)
-	m.Message = irc.ParseMessage(raw)
+	m.Message = ircmsg.ParseMessage(raw)
 	m.Content = m.Trailing()
 
 	if len(m.Params) > 0 {
