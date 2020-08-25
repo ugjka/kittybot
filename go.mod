@@ -1,6 +1,6 @@
 module github.com/ugjka/kittybot
 
-go 1.14
+go 1.15
 
 require (
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
