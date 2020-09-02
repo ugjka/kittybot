@@ -138,8 +138,8 @@ const CapUserhostInNames = "userhost-in-names"
 // CapCapNotify is cap-notify CAP
 const CapCapNotify = "cap-notify"
 
-// CapIdentifyMSG is identify-msg CAP
-const CapIdentifyMSG = "identify-msg"
+// CapIdentifyMsg is identify-msg CAP
+const CapIdentifyMsg = "identify-msg"
 
 // CapTLS is tls CAP
 const CapTLS = "tls"

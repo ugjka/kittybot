@@ -99,7 +99,7 @@ func (bot *Bot) maxMsgSize(command, who string) int {
 	// Carriage return and linefeed are not counted here as they
 	// are added by handleOutgoingMessages()
 	maxSize := 510 - len(fmt.Sprintf(":%s %s %s :", bot.Prefix(), command, who))
-	if _, present := bot.CapStatus(CapIdentifyMSG); present {
+	if _, present := bot.CapStatus(CapIdentifyMsg); present {
 		maxSize--
 	}
 	// https://ircv3.net/specs/extensions/multiline
