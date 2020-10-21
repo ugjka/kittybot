@@ -86,7 +86,7 @@ func (bot *Bot) String() string {
 }
 
 // NewBot creates a new instance of Bot
-func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
+func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 	// Defaults are set here
 	bot := Bot{
 		started:         time.Now(),
@@ -128,7 +128,7 @@ func NewBot(host, nick string, options ...func(*Bot)) (*Bot, error) {
 	bot.AddTrigger(bot.capHandler)
 	bot.AddTrigger(saslFail)
 	bot.AddTrigger(saslSuccess)
-	return &bot, nil
+	return &bot
 }
 
 // saslAuthenticate performs SASL authentication

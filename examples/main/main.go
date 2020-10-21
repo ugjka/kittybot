@@ -22,10 +22,7 @@ func main() {
 	channels := func(bot *kitty.Bot) {
 		bot.Channels = []string{"#test"}
 	}
-	bot, err := kitty.NewBot(*serv, *nick, hijackSession, channels)
-	if err != nil {
-		panic(err)
-	}
+	bot := kitty.NewBot(*serv, *nick, hijackSession, channels)
 
 	bot.AddTrigger(sayInfoMessage)
 	bot.AddTrigger(longTrigger)
