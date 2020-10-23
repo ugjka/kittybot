@@ -38,7 +38,11 @@ var joinChannels = Trigger{
 				}
 			}
 			// Fire Joined
-			close(bot.Joined)
+			select {
+			case <-bot.Joined:
+			default:
+				close(bot.Joined)
+			}
 		})
 	},
 }
