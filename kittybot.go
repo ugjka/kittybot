@@ -101,6 +101,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
 		HijackAfterFunc: func() {},
+		Joined:          make(chan struct{}),
 		SSL:             false,
 		SASL:            false,
 		Channels:        []string{"#test"},
@@ -376,7 +377,6 @@ func (bot *Bot) Uptime() string {
 
 func (bot *Bot) reset() {
 	// These need to be reset on each run
-	bot.Joined = make(chan struct{})
 	bot.closer = make(chan struct{})
 	bot.outgoing = make(chan string, 16)
 	bot.mu.Lock()
