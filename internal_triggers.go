@@ -30,7 +30,7 @@ var joinChannels = Trigger{
 		bot.didJoinChannels.Do(func() {
 			for _, channel := range bot.Channels {
 				splitchan := strings.SplitN(channel, ":", 2)
-				fmt.Println("splitchan is:", splitchan)
+				bot.Info("joining", "splitchan", splitchan)
 				if len(splitchan) == 2 {
 					channel = splitchan[0]
 					password := splitchan[1]
@@ -39,6 +39,8 @@ var joinChannels = Trigger{
 					bot.Send(fmt.Sprintf("JOIN %s", channel))
 				}
 			}
+			// Fire Joined
+			close(bot.Joined)
 		})
 	},
 }
