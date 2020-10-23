@@ -25,8 +25,6 @@ var joinChannels = Trigger{
 		return m.Command == "001" || m.Command == "372"
 	},
 	Action: func(bot *Bot, m *Message) {
-		bot.mu.Lock()
-		defer bot.mu.Unlock()
 		bot.didJoinChannels.Do(func() {
 			for _, channel := range bot.Channels {
 				splitchan := strings.SplitN(channel, ":", 2)
