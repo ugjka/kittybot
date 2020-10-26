@@ -3,7 +3,6 @@ package kitty
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -24,8 +23,6 @@ type Bot struct {
 	reconnecting bool
 	// This is set if we have been hijacked
 	hijacked bool
-	// Channel to indicate shutdown
-	closer   chan struct{}
 	con      net.Conn
 	outgoing chan string
 	handlers []Handler
@@ -38,10 +35,10 @@ type Bot struct {
 	// Unix domain socket address for other Unixes
 	unixsock string
 	unixlist *net.UnixListener
-	closing  bool
 	// Log15 loggger
 	log.Logger
 	didJoinChannels sync.Once
+	closeOnce       sync.Once
 	wg              sync.WaitGroup
 	// IRC CAPS and
 	// SASL credentials
@@ -201,20 +198,7 @@ func (bot *Bot) handleIncomingMessages() {
 			}
 		}()
 	}
-	if !bot.isClosing() {
-		bot.setClosing(true)
-		bot.Error("read incoming", "error", scan.Err())
-		if bot.unixlist != nil {
-			err := bot.unixlist.Close()
-			if err != nil {
-				bot.Error("closing unix listener", "error", err)
-			}
-		}
-		select {
-		case bot.outgoing <- "DISCONNECT":
-		default:
-		}
-	}
+	bot.close("incoming", scan.Err())
 }
 
 // Handles message speed throtling
@@ -224,16 +208,7 @@ func (bot *Bot) handleOutgoingMessages() {
 		bot.Debug("Outgoing", "data", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
-			if !bot.isClosing() {
-				bot.setClosing(true)
-				bot.Error("send outgoing", "error", err)
-				if bot.unixlist != nil {
-					err := bot.unixlist.Close()
-					if err != nil {
-						bot.Error("closing unix listener", "error", err)
-					}
-				}
-			}
+			bot.close("outgoing", err)
 			return
 		}
 		time.Sleep(bot.ThrottleDelay)
@@ -302,27 +277,26 @@ func (bot *Bot) CapStatus(cap string) (enabled, present bool) {
 	return false, false
 }
 
-// Close closes the bot
-func (bot *Bot) Close() error {
-	if bot.isClosing() {
-		return errors.New("kittybot is already closing")
-	}
-	bot.setClosing(true)
-	if bot.unixlist != nil {
-		err := bot.unixlist.Close()
+// internal closer
+func (bot *Bot) close(fault string, err error) {
+	bot.closeOnce.Do(func() {
 		if err != nil {
-			return err
+			bot.Error(fault, "error", err)
 		}
-	}
-	err := bot.con.Close()
-	if err != nil {
-		return err
-	}
-	select {
-	case bot.outgoing <- "DISCONNECT":
-	default:
-	}
-	return nil
+		if bot.unixlist != nil {
+			bot.unixlist.Close()
+		}
+		bot.con.Close()
+		select {
+		case bot.outgoing <- "DISCONNECT":
+		default:
+		}
+	})
+}
+
+// Close closes the bot
+func (bot *Bot) Close() {
+	bot.close("", nil)
 }
 
 // Prefix returns the bot's own prefix.
@@ -377,28 +351,15 @@ func (bot *Bot) Uptime() string {
 
 func (bot *Bot) reset() {
 	// These need to be reset on each run
-	bot.closer = make(chan struct{})
 	bot.outgoing = make(chan string, 16)
 	bot.mu.Lock()
 	bot.didJoinChannels = sync.Once{}
+	bot.closeOnce = sync.Once{}
 	bot.mu.Unlock()
 	bot.wg = sync.WaitGroup{}
 	bot.hijacked = false
 	bot.reconnecting = false
-	bot.setClosing(false)
 	bot.capHandler.reset()
-}
-
-func (bot *Bot) isClosing() bool {
-	bot.mu.Lock()
-	defer bot.mu.Unlock()
-	return bot.closing
-}
-
-func (bot *Bot) setClosing(closing bool) {
-	bot.mu.Lock()
-	bot.closing = closing
-	bot.mu.Unlock()
 }
 
 // Handler is used to subscribe and react to events on the bot Server

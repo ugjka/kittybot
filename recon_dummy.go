@@ -1,4 +1,4 @@
-// +build !linux,!freebsd,!openbsd,!dragonfly,!netbsd,!darwin,!solaris
+// +build !linux,!freebsd,!openbsd,!dragonfly,!netbsd,!darwin,!solaris,!illumos
 
 package kitty
 

@@ -28,9 +28,6 @@ func (bot *Bot) startUnixListener() {
 	bot.mu.Unlock()
 	con, err := list.AcceptUnix()
 	if err != nil {
-		if !bot.isClosing() {
-			bot.Error("unix listener", "error", err)
-		}
 		return
 	}
 	defer con.Close()
@@ -54,17 +51,7 @@ func (bot *Bot) startUnixListener() {
 	if err != nil {
 		panic(err)
 	}
-	if !bot.isClosing() {
-		bot.setClosing(true)
-		err := bot.con.Close()
-		if err != nil {
-			bot.Error("hijack closing bot", "error", err)
-		}
-		select {
-		case bot.outgoing <- "DISCONNECT":
-		default:
-		}
-	}
+	bot.close("", nil)
 	bot.hijacked = true
 }
 
