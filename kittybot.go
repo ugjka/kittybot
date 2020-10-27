@@ -57,7 +57,7 @@ type Bot struct {
 	// If you need to do something after a hijack
 	// for example, to run some irc commands or to restore some state
 	HijackAfterFunc func()
-	// Fires after joining channels
+	// Fires after joining the channels
 	Joined chan struct{}
 	// An optional function that connects to an IRC server over plaintext:
 	Dial func(network, addr string) (net.Conn, error)
@@ -90,6 +90,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		started:         time.Now(),
 		unixastr:        fmt.Sprintf("@%s-%s/bot", host, nick),
 		unixsock:        fmt.Sprintf("/tmp/%s-%s-bot.sock", host, nick),
+		outgoing:        make(chan string, 16),
 		Host:            host,
 		Nick:            nick,
 		nick:            nick,
@@ -288,7 +289,7 @@ func (bot *Bot) close(fault string, err error) {
 		}
 		bot.con.Close()
 		select {
-		case bot.outgoing <- "DISCONNECT":
+		case bot.outgoing <- "PING":
 		default:
 		}
 	})
@@ -351,7 +352,6 @@ func (bot *Bot) Uptime() string {
 
 func (bot *Bot) reset() {
 	// These need to be reset on each run
-	bot.outgoing = make(chan string, 16)
 	bot.mu.Lock()
 	bot.joinOnce = sync.Once{}
 	bot.closeOnce = sync.Once{}
