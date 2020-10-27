@@ -25,7 +25,7 @@ var joinChannels = Trigger{
 		return m.Command == "001" || m.Command == "372"
 	},
 	Action: func(bot *Bot, m *Message) {
-		bot.didJoinChannels.Do(func() {
+		bot.joinOnce.Do(func() {
 			for _, channel := range bot.Channels {
 				splitchan := strings.SplitN(channel, ":", 2)
 				bot.Info("joining", "splitchan", splitchan)

@@ -37,9 +37,9 @@ type Bot struct {
 	unixlist *net.UnixListener
 	// Log15 loggger
 	log.Logger
-	didJoinChannels sync.Once
-	closeOnce       sync.Once
-	wg              sync.WaitGroup
+	joinOnce  sync.Once
+	closeOnce sync.Once
+	wg        sync.WaitGroup
 	// IRC CAPS and
 	// SASL credentials
 	capHandler *ircCaps
@@ -353,7 +353,7 @@ func (bot *Bot) reset() {
 	// These need to be reset on each run
 	bot.outgoing = make(chan string, 16)
 	bot.mu.Lock()
-	bot.didJoinChannels = sync.Once{}
+	bot.joinOnce = sync.Once{}
 	bot.closeOnce = sync.Once{}
 	bot.mu.Unlock()
 	bot.wg = sync.WaitGroup{}
