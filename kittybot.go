@@ -247,12 +247,12 @@ func (bot *Bot) Run() (hijacked bool) {
 	go bot.handleIncomingMessages()
 	bot.wg.Add(1)
 	go bot.handleOutgoingMessages()
+	bot.wg.Add(1)
+	go bot.startUnixListener()
 
 	if hijack {
 		go bot.HijackAfterFunc()
 	}
-	bot.wg.Add(1)
-	go bot.startUnixListener()
 
 	// Only register on an initial connection
 	if !bot.reconnecting {
