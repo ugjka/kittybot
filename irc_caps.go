@@ -71,13 +71,13 @@ func (c *ircCaps) Handle(bot *Bot, m *Message) {
 	}
 
 	if c.capACK(m) {
-		bot.Info("IRCV3", "CAPs", m.Content)
+		bot.Info("ircv3", "capabilities", m.Content)
 		if c.saslOn && strings.Contains(m.Content, "sasl") {
-			bot.Debug("Recieved SASL ACK")
+			bot.Debug("recieved sasl ack")
 			bot.Send("AUTHENTICATE PLAIN")
 		} else {
 			if c.saslOn {
-				bot.Crit("SASL not supported")
+				bot.Crit("sasl not supported")
 			}
 			bot.Send("CAP END")
 			c.done = true
@@ -85,7 +85,7 @@ func (c *ircCaps) Handle(bot *Bot, m *Message) {
 	}
 
 	if c.saslAuth(m) {
-		bot.Debug("Got auth message!")
+		bot.Debug("got auth message")
 		out := bytes.Join([][]byte{[]byte(c.saslUser), []byte(c.saslUser), []byte(c.saslPass)}, []byte{0})
 		encpass := base64.StdEncoding.EncodeToString(out)
 		bot.Send("AUTHENTICATE " + encpass)

@@ -136,7 +136,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 func (bot *Bot) saslAuthenticate(user, pass string) {
 	bot.capHandler.saslEnable()
 	bot.capHandler.saslCreds(user, pass)
-	bot.Debug("Beginning SASL Authentication")
+	bot.Debug("beginning sasl authentication")
 	bot.Send("CAP LS")
 	bot.SetNick(bot.Nick)
 	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
@@ -149,7 +149,7 @@ func (bot *Bot) standardRegistration() {
 	if bot.Password != "" {
 		bot.Send("PASS " + bot.Password)
 	}
-	bot.Debug("Sending standard registration")
+	bot.Debug("sending standard registration")
 	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
 	bot.SetNick(bot.Nick)
 }
@@ -166,7 +166,7 @@ func (bot *Bot) getNick() string {
 }
 
 func (bot *Bot) connect(host string) (err error) {
-	bot.Debug("Connecting")
+	bot.Debug("connecting")
 	dial := bot.Dial
 	if dial == nil {
 		dial = net.Dial
@@ -192,7 +192,7 @@ func (bot *Bot) handleIncomingMessages() {
 		// Disconnect if we have seen absolutely nothing for 300 seconds
 		bot.con.SetDeadline(time.Now().Add(bot.PingTimeout))
 		msg := parseMessage(scan.Text())
-		bot.Debug("Incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Tags", msg.Tags, "msg.Command", msg.Command, "msg.Trailing", msg.Trailing())
+		bot.Debug("incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Tags", msg.Tags, "msg.Command", msg.Command, "msg.Trailing", msg.Trailing())
 		go func() {
 			for _, h := range bot.handlers {
 				go h.Handle(bot, msg)
@@ -206,7 +206,7 @@ func (bot *Bot) handleIncomingMessages() {
 func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
-		bot.Debug("Outgoing", "data", s)
+		bot.Debug("outgoing", "data", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
 			bot.close("outgoing", err)
@@ -220,27 +220,27 @@ func (bot *Bot) handleOutgoingMessages() {
 // Returns true if we have been hijacked (if you loop over Run it might be wise to break on hijack
 // to avoid looping between 2 instances).
 func (bot *Bot) Run() (hijacked bool) {
-	bot.Debug("Starting bot goroutines")
+	bot.Debug("starting bot goroutines")
 	// Reset some things in case we re-run Run
 	bot.reset()
 	// Attempt reconnection
 	var hijack bool
 	if bot.HijackSession {
 		if bot.SSL {
-			bot.Crit("Can't Hijack a SSL connection")
+			bot.Crit("can't hijack an ssl connection")
 			return
 		}
 		hijack = bot.hijackSession()
-		bot.Debug("Hijack", "Did we?", hijack)
+		bot.Debug("hijack", "did we?", hijack)
 	}
 
 	if !hijack {
 		err := bot.connect(bot.Host)
 		if err != nil {
-			bot.Crit("bot.Connect error", "err", err.Error())
+			bot.Crit("connect error", "err", err.Error())
 			return
 		}
-		bot.Info("Connected successfully!")
+		bot.Info("connected successfully!")
 	}
 
 	bot.wg.Add(1)
@@ -263,7 +263,7 @@ func (bot *Bot) Run() (hijacked bool) {
 		}
 	}
 	bot.wg.Wait()
-	bot.Info("Disconnected")
+	bot.Info("disconnected")
 	return bot.hijacked
 
 }

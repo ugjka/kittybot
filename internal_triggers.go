@@ -60,7 +60,7 @@ var getPrefix = Trigger{
 			Host: m.Prefix.Host,
 		}
 		bot.prefixMu.Unlock()
-		bot.Debug("Got prefix", "prefix", bot.Prefix().String())
+		bot.Debug("got prefix", "prefix", bot.Prefix().String())
 	},
 }
 
@@ -95,7 +95,7 @@ var saslFail = Trigger{
 			m.Command == "906" || m.Command == "907"
 	},
 	Action: func(bot *Bot, m *Message) {
-		bot.Crit("SASL FAIL", "error", m.Content)
+		bot.Crit("sasl fail", "error", m.Content)
 	},
 }
 
@@ -104,6 +104,6 @@ var saslSuccess = Trigger{
 		return m.Command == "900" || m.Command == "903"
 	},
 	Action: func(bot *Bot, m *Message) {
-		bot.Info("SASL SUCCESS", "info", m.Content)
+		bot.Info("sasl success", "info", m.Content)
 	},
 }
