@@ -66,7 +66,8 @@ type Bot struct {
 	// This bots nick
 	Nick string
 	// Transient nick, that is used internally to track nick changes and calculate the prefix for the bot
-	nick string
+	nick    string
+	DropMsg uint8
 	// Duration to wait between sending of messages to avoid being
 	// kicked by the server for flooding (default 200ms)
 	ThrottleDelay time.Duration
@@ -95,6 +96,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		Nick:            nick,
 		nick:            nick,
 		capHandler:      &ircCaps{},
+		DropMsg:         5,
 		ThrottleDelay:   200 * time.Millisecond,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
@@ -206,6 +208,9 @@ func (bot *Bot) handleIncomingMessages() {
 func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
+		if len(bot.outgoing) > int(bot.DropMsg) {
+			continue
+		}
 		bot.Debug("outgoing", "data", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
