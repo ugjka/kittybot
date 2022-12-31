@@ -96,8 +96,8 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		Nick:            nick,
 		nick:            nick,
 		capHandler:      &ircCaps{},
-		DropMsg:         5,
-		ThrottleDelay:   200 * time.Millisecond,
+		DropMsg:         3,
+		ThrottleDelay:   300 * time.Millisecond,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
 		HijackAfterFunc: func() {},
@@ -209,23 +209,15 @@ func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
 		if len(bot.outgoing) > int(bot.DropMsg) {
-		out:
-			for {
-				select {
-				case <-bot.outgoing:
-				default:
-					break out
-				}
-			}
-			time.Sleep(bot.ThrottleDelay * 2)
+			continue
 		}
+		time.Sleep(bot.ThrottleDelay)
 		bot.Debug("outgoing", "data", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
 			bot.close("outgoing", err)
 			return
 		}
-		time.Sleep(bot.ThrottleDelay)
 	}
 }
 
