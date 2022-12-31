@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -28,8 +29,13 @@ func (bot *Bot) Join(ch string) {
 // Msg sends a message to 'who' (user or channel)
 func (bot *Bot) Msg(who, text string) {
 	const command = "PRIVMSG"
-	for _, line := range bot.splitText(text, command, who) {
-		bot.Send(command + " " + who + " :" + line)
+	if time.Since(bot.now) < bot.ThrottleDelay {
+		return
+	} else {
+		for _, line := range bot.splitText(text, command, who) {
+			bot.Send(command + " " + who + " :" + line)
+		}
+		bot.now = time.Now()
 	}
 }
 

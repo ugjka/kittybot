@@ -78,6 +78,7 @@ type Bot struct {
 	// Bot's prefix
 	prefix   *ircmsg.Prefix
 	prefixMu *sync.RWMutex
+	now      time.Time
 }
 
 func (bot *Bot) String() string {
@@ -207,18 +208,12 @@ func (bot *Bot) handleIncomingMessages() {
 // Handles message speed throtling
 func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
-	now := time.Now().Add(-(bot.ThrottleDelay))
 	for s := range bot.outgoing {
-		if time.Since(now) < bot.ThrottleDelay {
-			continue
-		} else {
-			bot.Debug("outgoing", "data", s)
-			_, err := fmt.Fprint(bot.con, s+"\r\n")
-			if err != nil {
-				bot.close("outgoing", err)
-				return
-			}
-			now = time.Now()
+		bot.Debug("outgoing", "data", s)
+		_, err := fmt.Fprint(bot.con, s+"\r\n")
+		if err != nil {
+			bot.close("outgoing", err)
+			return
 		}
 	}
 }
@@ -227,6 +222,7 @@ func (bot *Bot) handleOutgoingMessages() {
 // Returns true if we have been hijacked (if you loop over Run it might be wise to break on hijack
 // to avoid looping between 2 instances).
 func (bot *Bot) Run() (hijacked bool) {
+	bot.now = time.Now().Add(bot.ThrottleDelay)
 	bot.Debug("starting bot goroutines")
 	// Reset some things in case we re-run Run
 	bot.reset()
