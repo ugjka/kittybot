@@ -69,7 +69,7 @@ type Bot struct {
 	nick    string
 	DropMsg uint8
 	// Duration to wait between sending of messages to avoid being
-	// kicked by the server for flooding (default 200ms)
+	// kicked by the server for flooding (default 1s)
 	ThrottleDelay time.Duration
 	// Maxmimum time between incoming data
 	PingTimeout time.Duration
@@ -97,7 +97,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		nick:            nick,
 		capHandler:      &ircCaps{},
 		DropMsg:         3,
-		ThrottleDelay:   300 * time.Millisecond,
+		ThrottleDelay:   time.Second,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
 		HijackAfterFunc: func() {},
@@ -207,21 +207,19 @@ func (bot *Bot) handleIncomingMessages() {
 // Handles message speed throtling
 func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
+	now := time.Now().Add(-(bot.ThrottleDelay))
 	for s := range bot.outgoing {
-		if len(bot.outgoing) > int(bot.DropMsg) {
-			for i := len(bot.outgoing); i > 0; i-- {
-				<-bot.outgoing
-			}
-			time.Sleep(bot.ThrottleDelay * 2)
+		if time.Since(now) < bot.ThrottleDelay {
 			continue
+		} else {
+			bot.Debug("outgoing", "data", s)
+			_, err := fmt.Fprint(bot.con, s+"\r\n")
+			if err != nil {
+				bot.close("outgoing", err)
+				return
+			}
+			now = time.Now()
 		}
-		bot.Debug("outgoing", "data", s)
-		_, err := fmt.Fprint(bot.con, s+"\r\n")
-		if err != nil {
-			bot.close("outgoing", err)
-			return
-		}
-		time.Sleep(bot.ThrottleDelay)
 	}
 }
 
