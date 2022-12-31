@@ -209,8 +209,15 @@ func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
 		if len(bot.outgoing) > int(bot.DropMsg) {
-			time.Sleep(time.Second)
-			continue
+		out:
+			for {
+				select {
+				case <-bot.outgoing:
+				default:
+					break out
+				}
+			}
+			time.Sleep(bot.ThrottleDelay * 2)
 		}
 		bot.Debug("outgoing", "data", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
