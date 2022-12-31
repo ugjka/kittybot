@@ -29,6 +29,7 @@ func (bot *Bot) Join(ch string) {
 // Msg sends a message to 'who' (user or channel)
 func (bot *Bot) Msg(who, text string) {
 	const command = "PRIVMSG"
+	bot.mu.Lock()
 	if time.Since(bot.now) < bot.ThrottleDelay {
 		return
 	} else {
@@ -37,6 +38,7 @@ func (bot *Bot) Msg(who, text string) {
 		}
 		bot.now = time.Now()
 	}
+	bot.mu.Unlock()
 }
 
 // MsgMaxSize returns maximum number of bytes that fit into one message.
