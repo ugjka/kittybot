@@ -209,6 +209,7 @@ func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
 		if len(bot.outgoing) > int(bot.DropMsg) {
+			time.Sleep(time.Second)
 			continue
 		}
 		bot.Debug("outgoing", "data", s)
