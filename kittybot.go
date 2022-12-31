@@ -209,15 +209,19 @@ func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
 		if len(bot.outgoing) > int(bot.DropMsg) {
+			for i := len(bot.outgoing); i > 0; i-- {
+				<-bot.outgoing
+			}
+			time.Sleep(bot.ThrottleDelay * 2)
 			continue
 		}
-		time.Sleep(bot.ThrottleDelay)
 		bot.Debug("outgoing", "data", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
 			bot.close("outgoing", err)
 			return
 		}
+		time.Sleep(bot.ThrottleDelay)
 	}
 }
 
