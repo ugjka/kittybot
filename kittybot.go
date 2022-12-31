@@ -69,7 +69,7 @@ type Bot struct {
 	nick    string
 	DropMsg uint8
 	// Duration to wait between sending of messages to avoid being
-	// kicked by the server for flooding (default 1s)
+	// kicked by the server for flooding (default 300ms)
 	ThrottleDelay time.Duration
 	// Maxmimum time between incoming data
 	PingTimeout time.Duration
@@ -78,7 +78,6 @@ type Bot struct {
 	// Bot's prefix
 	prefix   *ircmsg.Prefix
 	prefixMu *sync.RWMutex
-	now      time.Time
 }
 
 func (bot *Bot) String() string {
@@ -98,7 +97,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		nick:            nick,
 		capHandler:      &ircCaps{},
 		DropMsg:         3,
-		ThrottleDelay:   time.Second,
+		ThrottleDelay:   time.Millisecond * 300,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
 		HijackAfterFunc: func() {},
@@ -215,6 +214,7 @@ func (bot *Bot) handleOutgoingMessages() {
 			bot.close("outgoing", err)
 			return
 		}
+		time.Sleep(bot.ThrottleDelay)
 	}
 }
 
@@ -222,7 +222,6 @@ func (bot *Bot) handleOutgoingMessages() {
 // Returns true if we have been hijacked (if you loop over Run it might be wise to break on hijack
 // to avoid looping between 2 instances).
 func (bot *Bot) Run() (hijacked bool) {
-	bot.now = time.Now().Add(bot.ThrottleDelay)
 	bot.Debug("starting bot goroutines")
 	// Reset some things in case we re-run Run
 	bot.reset()

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
-	"time"
 	"unicode/utf8"
 )
 
@@ -29,16 +28,9 @@ func (bot *Bot) Join(ch string) {
 // Msg sends a message to 'who' (user or channel)
 func (bot *Bot) Msg(who, text string) {
 	const command = "PRIVMSG"
-	bot.mu.Lock()
-	if time.Since(bot.now) < bot.ThrottleDelay {
-		return
-	} else {
-		for _, line := range bot.splitText(text, command, who) {
-			bot.Send(command + " " + who + " :" + line)
-		}
-		bot.now = time.Now()
+	for _, line := range bot.splitText(text, command, who) {
+		bot.Send(command + " " + who + " :" + line)
 	}
-	bot.mu.Unlock()
 }
 
 // MsgMaxSize returns maximum number of bytes that fit into one message.
