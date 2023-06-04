@@ -67,6 +67,8 @@ type Bot struct {
 	Nick string
 	// Transient nick, that is used internally to track nick changes and calculate the prefix for the bot
 	nick string
+	// This bots realname
+	Realname string
 	// Duration to wait between sending of messages to avoid being
 	// kicked by the server for flooding (default 300ms)
 	ThrottleDelay time.Duration
@@ -85,6 +87,15 @@ func (bot *Bot) String() string {
 
 // NewBot creates a new instance of Bot
 func NewBot(host, nick string, options ...func(*Bot)) *Bot {
+
+	// determine user for intial prefix
+	user := func() string {
+		if len(nick) > 9 {
+			return nick[:9]
+		}
+		return nick
+	}()
+
 	// Defaults are set here
 	bot := Bot{
 		started:         time.Now(),
@@ -94,6 +105,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		Host:            host,
 		Nick:            nick,
 		nick:            nick,
+		Realname:        nick,
 		capHandler:      &ircCaps{},
 		ThrottleDelay:   time.Millisecond * 300,
 		PingTimeout:     300 * time.Second,
@@ -108,8 +120,8 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		// for example, if the server doesn't advertise joins
 		prefix: &ircmsg.Prefix{
 			Name: nick,
-			User: nick,
-			Host: strings.Repeat("*", 510-353-len(nick)*2),
+			User: user,
+			Host: strings.Repeat("*", 510-353-len(nick)-len(user)),
 		},
 		prefixMu: &sync.RWMutex{},
 	}
@@ -139,7 +151,7 @@ func (bot *Bot) saslAuthenticate(user, pass string) {
 	bot.Debug("beginning sasl authentication")
 	bot.Send("CAP LS")
 	bot.SetNick(bot.Nick)
-	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
+	bot.sendUserCommand(bot.Nick, bot.Realname, "0")
 }
 
 // standardRegistration performs a basic set of registration commands
@@ -150,7 +162,7 @@ func (bot *Bot) standardRegistration() {
 		bot.Send("PASS " + bot.Password)
 	}
 	bot.Debug("sending standard registration")
-	bot.sendUserCommand(bot.Nick, bot.Nick, "0")
+	bot.sendUserCommand(bot.Nick, bot.Realname, "0")
 	bot.SetNick(bot.Nick)
 }
 
