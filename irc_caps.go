@@ -39,8 +39,11 @@ func (c *ircCaps) reset() {
 	c.mu.Unlock()
 }
 
-func (c *ircCaps) saslAuth(m *Message) bool {
-	return m.Command == "AUTHENTICATE" && len(m.Params) == 1 && m.Params[0] == "+"
+func (c *ircCaps) isSaslAuth(m *Message) bool {
+	return (m.Command == "AUTHENTICATE" && len(m.Params) == 1 && m.Params[0] == "+") ||
+		// 903 RPL_SASLSUCCESS
+		// 904 ERR_SASLFAIL
+		(m.Command == "903" || m.Command == "904")
 }
 
 func (c *ircCaps) capLS(m *Message) bool {
@@ -84,7 +87,7 @@ func (c *ircCaps) Handle(bot *Bot, m *Message) {
 		}
 	}
 
-	if c.saslAuth(m) {
+	if c.isSaslAuth(m) {
 		bot.Debug("got auth message")
 		out := bytes.Join([][]byte{[]byte(c.saslUser), []byte(c.saslUser), []byte(c.saslPass)}, []byte{0})
 		encpass := base64.StdEncoding.EncodeToString(out)
