@@ -1,13 +1,12 @@
 # KittyBot
 
 [![GoDoc](https://godoc.org/github.com/ugjka/kittybot?status.png)](https://godoc.org/github.com/ugjka/kittybot)
-[![Donate](paypal.svg?raw=true)](https://www.paypal.me/ugjka)
 
-Hard fork of [github.com/whyrusleeping/hellabot](https://github.com/whyrusleeping/hellabot)
+A hard fork of [github.com/whyrusleeping/hellabot](https://github.com/whyrusleeping/hellabot)
 
 ![kittybot](kitty.png?raw=true)
 
-Kitten approved Internet Relay Chat (IRC) bot. KittyBot is an easily hackable event based IRC bot
+Kitten approved Internet Relay Chat (IRC) bot. KittyBot is an easily hackable event-based IRC bot
 framework with the ability to be updated without losing connection to the
 server. To respond to an event, simply create a "Trigger" struct containing
 two functions, one for the condition, and one for the action.
@@ -41,15 +40,14 @@ bot.Run() // Blocks until exit
 ```
 
 The 'To' field on the message object in triggers will refer to the channel that
-a given message is in, unless it is a server message, or a user to user private
-message. In such cases, the field will be the target user's name.
+a given message is in unless it is a server message or a user-to-user private message. In such cases, the field will be the target user's name.
 
 For more example triggers, check the examples directory.
 
 ## The Message struct
 
 The message struct is primarily what you will be dealing with when building
-triggers or reading off the Incoming channel.
+triggers or reading from the Incoming channel.
 This is mainly the ircmsg.Message struct with some additions.
 See [https://github.com/ugjka/ircmsg/blob/master/message.go#L221](https://github.com/ugjka/ircmsg/blob/master/message.go#L221)
 
@@ -75,13 +73,12 @@ See [https://github.com/ugjka/ircmsg/blob/master/message.go#L221](https://github
 
 ## Connection Passing
 
-KittyBot is able to restart without dropping its connection to the server
-(on Linux machines, and BSD flavours) by passing the TCP connection through a UNIX domain socket.
+KittyBot can restart without dropping its connection to the server
+(on Linux machines, and BSD flavors) by passing the TCP connection through a UNIX domain socket.
 This allows you to update triggers and other addons without actually logging
 your bot out of the IRC, avoiding the loss of op status and spamming the channel
 with constant join/part messages. To do this, run the program again with
-the same nick and without killing the first program (different nicks wont reuse
-the same bot instance). The first program will shutdown, and the new one
+the same nick and without killing the first program (different nicks won't reuse the same bot instance). The first program will shut down, and the new one
 will take over.
 
 \***\*This does not work with SSL connections, because we can't hand over a SSL connections state.\*\***
@@ -128,7 +125,7 @@ the Password field of the Bot struct before calling its Start method.
 Hellabot uses github.com/inconshreveable/log15 for logging.
 See [http://godoc.org/github.com/inconshreveable/log15](http://godoc.org/github.com/inconshreveable/log15)
 
-By default it discards all logs. In order to see any logs, give it a better handler.
+By default, it discards all logs. To see any logs, give it a better handler.
 Example: This would only show INFO level and above logs, logging to STDOUT
 
 ```go
@@ -148,7 +145,7 @@ currently being used for:
 
 - AutoOp Bot: ops you when you join the channel
 - Stats counting bot: counts how often people talk in a channel
-- Mock users you don't like by repeating what they say
+- Mock users, you don't like by repeating what they say
 - Fire a USB dart launcher on a given command
 - Control an MPD radio stream based on chat commands
 - Award praise to people for guessing a random number
