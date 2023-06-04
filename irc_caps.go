@@ -40,18 +40,15 @@ func (c *ircCaps) reset() {
 }
 
 func (c *ircCaps) isSaslAuth(m *Message) bool {
-	return (m.Command == "AUTHENTICATE" && len(m.Params) == 1 && m.Params[0] == "+") ||
-		// 903 RPL_SASLSUCCESS
-		// 904 ERR_SASLFAIL
-		(m.Command == "903" || m.Command == "904")
+	return (m.Command == "AUTHENTICATE" && m.Param(0) == "+")
 }
 
 func (c *ircCaps) capLS(m *Message) bool {
-	return m.Command == "CAP" && len(m.Params) > 1 && m.Params[1] == "LS"
+	return m.Command == "CAP" && m.Param(1) == "LS"
 }
 
 func (c *ircCaps) capACK(m *Message) bool {
-	return m.Command == "CAP" && len(m.Params) > 1 && m.Params[1] == "ACK"
+	return m.Command == "CAP" && m.Param(1) == "ACK"
 }
 
 func (c *ircCaps) Handle(bot *Bot, m *Message) {

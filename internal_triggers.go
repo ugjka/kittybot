@@ -85,7 +85,7 @@ var nickError = Trigger{
 			m.Command == "432" || m.Command == "431" || m.Command == "400"
 	},
 	Action: func(bot *Bot, m *Message) {
-		bot.Error("nick change error", m.Params[1], m.Content)
+		bot.Error("nick change error", m.Param(1), m.Content)
 	},
 }
 
