@@ -56,8 +56,12 @@ See [https://github.com/ugjka/ircmsg/blob/master/message.go#L221](https://github
  type Message struct {
      // ircmsg.Message with extended data, like GetTag() for IRCv3 tags
      *ircmsg.Message
+
      // Content generally refers to the text of a PRIVMSG
      Content string
+
+     // Raw contains the raw message
+     Raw string
 
      //Time at which this message was recieved
      TimeStamp time.Time

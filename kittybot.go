@@ -409,6 +409,9 @@ type Message struct {
 	// Content generally refers to the text of a PRIVMSG
 	Content string
 
+	// Raw contains the raw message
+	Raw string
+
 	//Time at which this message was recieved
 	TimeStamp time.Time
 
@@ -436,6 +439,8 @@ func parseMessage(raw string) (m *Message) {
 		m.From = m.Prefix.Name
 	}
 	m.TimeStamp = time.Now()
+
+	m.Raw = raw
 
 	return m
 }
