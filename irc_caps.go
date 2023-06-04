@@ -43,11 +43,11 @@ func (c *ircCaps) isSaslAuth(m *Message) bool {
 	return (m.Command == "AUTHENTICATE" && m.Param(0) == "+")
 }
 
-func (c *ircCaps) capLS(m *Message) bool {
+func (c *ircCaps) isCapLS(m *Message) bool {
 	return m.Command == "CAP" && m.Param(1) == "LS"
 }
 
-func (c *ircCaps) capACK(m *Message) bool {
+func (c *ircCaps) isCapACK(m *Message) bool {
 	return m.Command == "CAP" && m.Param(1) == "ACK"
 }
 
@@ -58,7 +58,7 @@ func (c *ircCaps) Handle(bot *Bot, m *Message) {
 		return
 	}
 
-	if c.capLS(m) {
+	if c.isCapLS(m) {
 		for _, cap := range strings.Split(m.Content, " ") {
 			if _, ok := allowedCAPs[cap]; ok {
 				c.capsEnabled[cap] = true
@@ -70,7 +70,7 @@ func (c *ircCaps) Handle(bot *Bot, m *Message) {
 		bot.Send("CAP REQ :" + strings.Join(c.caps, " "))
 	}
 
-	if c.capACK(m) {
+	if c.isCapACK(m) {
 		bot.Info("ircv3", "capabilities", m.Content)
 		if c.saslOn && strings.Contains(m.Content, "sasl") {
 			bot.Debug("recieved sasl ack")
