@@ -201,8 +201,9 @@ func (bot *Bot) handleIncomingMessages() {
 	defer bot.wg.Done()
 	scan := bufio.NewScanner(bot.con)
 	for scan.Scan() {
-		// Disconnect if we have seen absolutely nothing for 300 seconds
+		// Disconnect if we have seen absolutely nothing for defined amount of time
 		bot.con.SetDeadline(time.Now().Add(bot.PingTimeout))
+
 		msg := parseMessage(scan.Text())
 		bot.Debug("incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Tags", msg.Tags, "msg.Command", msg.Command, "msg.Trailing", msg.Trailing())
 		go func() {
