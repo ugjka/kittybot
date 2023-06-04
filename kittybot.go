@@ -11,7 +11,6 @@ import (
 
 	"github.com/ugjka/ircmsg"
 	log "gopkg.in/inconshreveable/log15.v2"
-	logext "gopkg.in/inconshreveable/log15.v2/ext"
 
 	"crypto/tls"
 )
@@ -129,7 +128,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		option(&bot)
 	}
 	// Discard logs by default
-	bot.Logger = log.New("id", logext.RandId(8), "host", bot.Host, "nick", log.Lazy{Fn: bot.getNick})
+	bot.Logger = log.New()
 
 	bot.Logger.SetHandler(log.DiscardHandler())
 	bot.AddTrigger(pingPong)
@@ -205,7 +204,7 @@ func (bot *Bot) handleIncomingMessages() {
 		bot.con.SetDeadline(time.Now().Add(bot.PingTimeout))
 
 		msg := parseMessage(scan.Text())
-		bot.Debug("incoming", "raw", scan.Text(), "msg.To", msg.To, "msg.From", msg.From, "msg.Params", msg.Params, "msg.Tags", msg.Tags, "msg.Command", msg.Command, "msg.Trailing", msg.Trailing())
+		bot.Debug(fmt.Sprintf("[incoming]-[%s]", bot.Host), "raw", scan.Text())
 		go func() {
 			for _, h := range bot.handlers {
 				go h.Handle(bot, msg)
@@ -219,7 +218,7 @@ func (bot *Bot) handleIncomingMessages() {
 func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
 	for s := range bot.outgoing {
-		bot.Debug("outgoing", "data", s)
+		bot.Debug(fmt.Sprintf("[outgoing]-[%s]", bot.Host), "raw", s)
 		_, err := fmt.Fprint(bot.con, s+"\r\n")
 		if err != nil {
 			bot.close("outgoing", err)
