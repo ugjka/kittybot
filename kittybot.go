@@ -69,8 +69,14 @@ type Bot struct {
 	// This bots realname
 	Realname string
 	// Duration to wait between sending of messages to avoid being
-	// kicked by the server for flooding (default 300ms)
+	// kicked by the server for flooding (default 250ms)
 	ThrottleDelay time.Duration
+	// Enable reply flood protection
+	LimitReplies bool
+	// Token bucket rate limiter constraints
+	// default: 5 messages per 10 seconds
+	ReplyMessageLimit int
+	ReplyInterval     time.Duration
 	// Maxmimum time between incoming data
 	PingTimeout time.Duration
 
@@ -78,6 +84,8 @@ type Bot struct {
 	// Bot's prefix
 	prefix   *ircmsg.Prefix
 	prefixMu *sync.RWMutex
+	// rate limiter
+	limiter *rateLimiter
 }
 
 func (bot *Bot) String() string {
@@ -106,7 +114,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		nick:            nick,
 		Realname:        nick,
 		capHandler:      &ircCaps{},
-		ThrottleDelay:   time.Millisecond * 300,
+		ThrottleDelay:   time.Millisecond * 250,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
 		HijackAfterFunc: func() {},
@@ -122,7 +130,9 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 			User: user,
 			Host: strings.Repeat("*", 510-353-len(nick)-len(user)),
 		},
-		prefixMu: &sync.RWMutex{},
+		prefixMu:          &sync.RWMutex{},
+		ReplyMessageLimit: 5,
+		ReplyInterval:     time.Second * 10,
 	}
 	for _, option := range options {
 		option(&bot)
@@ -255,6 +265,12 @@ func (bot *Bot) Run() (hijacked bool) {
 		bot.Info("connected successfully!")
 	}
 
+	// token bucket rate limiter for reply spam
+	if bot.LimitReplies {
+		bot.limiter = newRateLimiter(bot.ReplyMessageLimit, bot.ReplyInterval)
+		bot.limiter.start()
+	}
+
 	bot.wg.Add(1)
 	go bot.handleIncomingMessages()
 	bot.wg.Add(1)
@@ -275,6 +291,9 @@ func (bot *Bot) Run() (hijacked bool) {
 		}
 	}
 	bot.wg.Wait()
+	if bot.limiter != nil {
+		bot.limiter.kill()
+	}
 	bot.Info("disconnected")
 	return bot.hijacked
 

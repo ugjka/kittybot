@@ -66,6 +66,17 @@ func (bot *Bot) Part(ch, msg string) {
 
 // Reply sends a message to where the message came from (user or channel)
 func (bot *Bot) Reply(m *Message, text string) {
+	if bot.LimitReplies && bot.limiter.drop() {
+		bot.Logger.Warn("reply-limiter", "dropped",
+			func() string {
+				if len(text) > 30 {
+					return text[:30] + "..."
+				}
+				return text
+			}(),
+		)
+		return
+	}
 	bot.Msg(replyTarget(m), text)
 }
 
