@@ -31,7 +31,7 @@ var myTrigger = kitty.Trigger{
 The trigger makes the bot announce to everyone that something was said in the current channel. Use the code snippet below to make the bot and add the trigger.
 
 ```go
-bot, err := kitty.NewBot("irc.freenode.net:6667","kittybot")
+bot, err := kitty.NewBot("irc.libera.chat:6697","kittybot")
 if err != nil {
     panic(err)
 }
@@ -97,7 +97,7 @@ sslOptions := func(bot *kitty.Bot) {
     bot.SSL = true
 }
 
-bot, err := kitty.NewBot("irc.freenode.net:6667","kittybot",sslOptions)
+bot, err := kitty.NewBot("irc.libera.chat:6697","kittybot",sslOptions)
 // Handle err as you like
 
 bot.Run() # Blocks until disconnect.
