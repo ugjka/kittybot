@@ -30,9 +30,13 @@ func (rl *rateLimiter) start() {
 			select {
 			case <-rl.killchan:
 				timer.Stop()
+				close(rl.tokens)
 				return
 			case <-timer.C:
-				rl.tokens <- struct{}{}
+				select {
+				case rl.tokens <- struct{}{}:
+				default:
+				}
 				timer = time.NewTimer(rl.tokenInterval)
 			}
 		}
