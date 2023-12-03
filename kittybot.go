@@ -114,7 +114,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 		nick:            nick,
 		Realname:        nick,
 		capHandler:      &ircCaps{},
-		ThrottleDelay:   time.Millisecond * 250,
+		ThrottleDelay:   time.Millisecond * 300,
 		PingTimeout:     300 * time.Second,
 		HijackSession:   false,
 		HijackAfterFunc: func() {},
