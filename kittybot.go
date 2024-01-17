@@ -227,12 +227,30 @@ func (bot *Bot) handleIncomingMessages() {
 // Handles message speed throtling
 func (bot *Bot) handleOutgoingMessages() {
 	defer bot.wg.Done()
-	for s := range bot.outgoing {
-		bot.Debug(fmt.Sprintf("[outgoing]-[%s]", bot.Host), "raw", s)
-		_, err := fmt.Fprint(bot.con, s+"\r\n")
-		if err != nil {
-			bot.close("outgoing", err)
-			return
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
+	send := func(msg string) (err error) {
+		bot.Debug(fmt.Sprintf("[outgoing]-[%s]", bot.Host), "raw", msg)
+		_, err = fmt.Fprint(bot.con, msg+"\r\n")
+		return err
+	}
+	for {
+		select {
+		case msg, ok := <-bot.outgoing:
+			if !ok {
+				return
+			}
+			err := send(msg)
+			if err != nil {
+				bot.close("outgoing", err)
+				return
+			}
+		case <-ticker.C:
+			err := send(fmt.Sprintf("PING :%s", strings.Split(bot.Host, ":")[0]))
+			if err != nil {
+				bot.close("outgoing", err)
+				return
+			}
 		}
 		time.Sleep(bot.ThrottleDelay)
 	}
