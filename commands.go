@@ -67,19 +67,20 @@ func (bot *Bot) Part(ch, msg string) {
 // Reply sends a message to where the message came from (user or channel)
 func (bot *Bot) Reply(m *Message, text string) {
 	const command = "PRIVMSG"
-	for _, line := range bot.splitText(text, command, replyTarget(m)) {
+	who := replyTarget(m)
+	for _, line := range bot.splitText(text, command, who) {
 		if bot.LimitReplies && bot.limiter.drop() {
 			bot.Logger.Warn("reply-limiter", "dropped",
 				func() string {
-					if len(text) > 30 {
-						return text[:30] + "..."
+					if len(line) > 30 {
+						return line[:30] + "..."
 					}
-					return text
+					return line
 				}(),
 			)
 			continue
 		}
-		bot.Msg(replyTarget(m), line)
+		bot.Send(command + " " + who + " :" + line)
 	}
 }
 
