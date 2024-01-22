@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -73,6 +74,8 @@ type Bot struct {
 	ThrottleDelay time.Duration
 	// Enable reply flood protection
 	LimitReplies bool
+	// Strip irc formatting from incoming messages
+	StripColors bool
 	// Token bucket rate limiter constraints
 	// default: 5 messages per 10 seconds
 	ReplyMessageLimit int
@@ -205,6 +208,11 @@ func (bot *Bot) connect(host string) (err error) {
 	return err
 }
 
+// https://modern.ircdocs.horse/formatting.html#characters
+var stripReg = regexp.MustCompile(
+	"[\x02\x1d\x1f\x1e\x11\x16\x0f]|\x03(\\d{1,2}(,\\d{1,2})?)?",
+)
+
 // Incoming message gathering routine
 func (bot *Bot) handleIncomingMessages() {
 	defer bot.wg.Done()
@@ -212,8 +220,12 @@ func (bot *Bot) handleIncomingMessages() {
 	for scan.Scan() {
 		// Disconnect if we have seen absolutely nothing for defined amount of time
 		bot.con.SetDeadline(time.Now().Add(bot.PingTimeout))
+		raw := scan.Text()
+		if bot.StripColors {
+			raw = stripReg.ReplaceAllString(raw, "")
+		}
+		msg := parseMessage(raw)
 
-		msg := parseMessage(scan.Text())
 		bot.Debug(fmt.Sprintf("[incoming]-[%s]", bot.Host), "raw", scan.Text())
 		go func() {
 			for _, h := range bot.handlers {
