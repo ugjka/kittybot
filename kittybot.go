@@ -44,11 +44,14 @@ type Bot struct {
 	// SASL credentials
 	capHandler *ircCaps
 	// Exported fields
-	Host          string
+	Host string
+	// Server password
 	Password      string
 	Channels      []string
 	SSL           bool
 	SASL          bool
+	SASLNick      string
+	SASLPassword  string
 	HijackSession bool
 	// Set it if long messages get truncated
 	// on the receiving end
@@ -315,7 +318,14 @@ func (bot *Bot) Run() (hijacked bool) {
 	// Only register on an initial connection
 	if !bot.reconnecting {
 		if bot.SASL {
-			bot.saslAuthenticate(bot.Nick, bot.Password)
+			if bot.SASLNick != "" && bot.SASLPassword != "" {
+				if bot.Password != "" {
+					bot.Send("PASS " + bot.Password)
+				}
+				bot.saslAuthenticate(bot.SASLNick, bot.SASLPassword)
+			} else {
+				bot.saslAuthenticate(bot.Nick, bot.Password)
+			}
 		} else {
 			bot.standardRegistration()
 		}
