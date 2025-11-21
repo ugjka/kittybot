@@ -91,7 +91,7 @@ var nickError = Trigger{
 
 var saslFail = Trigger{
 	Condition: func(bot *Bot, m *Message) bool {
-		return m.Command == "904" || m.Command == "905" ||
+		return m.Command == "902" || m.Command == "904" || m.Command == "905" ||
 			m.Command == "906" || m.Command == "907"
 	},
 	Action: func(bot *Bot, m *Message) {
