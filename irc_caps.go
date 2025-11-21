@@ -43,6 +43,10 @@ func (c *ircCaps) isSaslAuth(m *Message) bool {
 	return (m.Command == "AUTHENTICATE" && m.Param(0) == "+")
 }
 
+func (c *ircCaps) isSaslFinished(m *Message) bool {
+	return m.Command == "903" || m.Command == "904"
+}
+
 func (c *ircCaps) isCapLS(m *Message) bool {
 	return m.Command == "CAP" && m.Param(1) == "LS"
 }
@@ -89,6 +93,9 @@ func (c *ircCaps) Handle(bot *Bot, m *Message) {
 		out := bytes.Join([][]byte{[]byte(c.saslUser), []byte(c.saslUser), []byte(c.saslPass)}, []byte{0})
 		encpass := base64.StdEncoding.EncodeToString(out)
 		bot.Send("AUTHENTICATE " + encpass)
+	}
+
+	if c.isSaslFinished(m) {
 		bot.Send("CAP END")
 		c.done = true
 	}
