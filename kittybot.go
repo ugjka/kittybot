@@ -318,9 +318,12 @@ func (bot *Bot) Run() (hijacked bool) {
 	// Only register on an initial connection
 	if !bot.reconnecting {
 		if bot.SASL {
-			if bot.SASLNick != "" && bot.SASLPassword != "" {
+			if bot.SASLPassword != "" {
 				if bot.Password != "" {
 					bot.Send("PASS " + bot.Password)
+				}
+				if bot.SASLNick == "" {
+					bot.SASLNick = bot.Nick
 				}
 				bot.saslAuthenticate(bot.SASLNick, bot.SASLPassword)
 			} else {
