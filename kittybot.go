@@ -155,6 +155,7 @@ func NewBot(host, nick string, options ...func(*Bot)) *Bot {
 	bot.AddTrigger(bot.capHandler)
 	bot.AddTrigger(saslFail)
 	bot.AddTrigger(saslSuccess)
+	bot.AddTrigger(passwdFail)
 	return &bot
 }
 

@@ -107,3 +107,12 @@ var saslSuccess = Trigger{
 		bot.Info("sasl success", "info", m.Content)
 	},
 }
+
+var passwdFail = Trigger{
+	Condition: func(bot *Bot, m *Message) bool {
+		return m.Command == "464"
+	},
+	Action: func(bot *Bot, m *Message) {
+		bot.Crit("passwd fail", "error", m.Content)
+	},
+}
